@@ -1,0 +1,52 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Jupyter / notebooks
+.ipynb_checkpoints/
+
+# Environment and secrets
+.env
+.env.*
+*.env
+
+# Logs and debug artifacts
+*.log
+*.out
+*.tmp
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Data / model artifacts (common for RAG projects)
+data/*.zip
+models/
+checkpoints/
+embeddings/
+vectorstore/
+faiss_index/
+
+# Optional: keep only source files in repo if you don't want local generated indexes
+# vectorstore/
+# faiss_index/
