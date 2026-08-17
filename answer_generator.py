@@ -88,18 +88,21 @@ def keyword_overlap(query: str, context: str) -> float:
 
     This is NOT the final hallucination detector.
     It is an additional safety signal.
+
+    Uses len(w) >= 2 to correctly handle Devanagari/Hindi
+    words which are often only 2-3 Unicode codepoints.
     """
 
     query_words = set(
         w.lower()
-        for w in re.findall(r"\w+", query)
-        if len(w) > 2
+        for w in re.findall(r"\w+", query, re.UNICODE)
+        if len(w) >= 2
     )
 
     context_words = set(
         w.lower()
-        for w in re.findall(r"\w+", context)
-        if len(w) > 2
+        for w in re.findall(r"\w+", context, re.UNICODE)
+        if len(w) >= 2
     )
 
     if not query_words:
@@ -176,6 +179,15 @@ def generate_extractive_answer(
 
     # --------------------------------------------------------
     # GUARDRAIL 3 - CONTEXT RELEVANCE
+    #
+    # Two signals are combined:
+    # 1. keyword_overlap: lexical match between query and context
+    # 2. top retrieval score: vector similarity already computed
+    #
+    # For Hindi/Devanagari, keyword overlap can be low even
+    # when the vector retrieval is highly relevant (score > 0.5).
+    # Therefore: if the top retrieval score >= 0.50, we trust
+    # the semantic retrieval and skip the lexical block.
     # --------------------------------------------------------
 
     overlap = keyword_overlap(
@@ -183,7 +195,16 @@ def generate_extractive_answer(
         combined_context
     )
 
-    if overlap < 0.05:
+    # Get the top retrieval score for the fallback signal.
+    top_score = 0.0
+    if retrieved_results:
+        top_score = float(
+            retrieved_results[0].get("score", 0.0)
+            or retrieved_results[0].get("vector_score", 0.0)
+        )
+
+    # Block only when BOTH signals indicate low relevance.
+    if overlap < 0.05 and top_score < 0.50:
         return {
             "answer": (
                 "I couldn't find sufficiently relevant "

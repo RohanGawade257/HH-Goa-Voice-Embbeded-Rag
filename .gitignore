@@ -20,6 +20,8 @@ dist/
 .ipynb_checkpoints/
 
 # Environment and secrets
+# Always track the example (no real secrets)
+!.env.example
 .env
 .env.*
 *.env
