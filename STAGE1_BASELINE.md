@@ -162,10 +162,11 @@ The embedding step dominates. `paraphrase-multilingual-MiniLM-L12-v2` is already
 | Reranking | DONE | lightweight lexical |
 | Answer generation | DONE | extractive |
 | Guardrails | DONE (fixed) | fixed Hindi false-rejection bug |
-| FastAPI | NOT STARTED | |
-| STT (Sarvam) | NOT STARTED | |
-| requirements.txt | NOT STARTED | |
-| .env.example | NOT STARTED | |
+| FastAPI | DONE | /health /query /voice |
+| STT (Sarvam) | DONE | mock fallback if no key |
+| requirements.txt | DONE | |
+| .env.example | DONE | Sarvam key scrubbed |
+| Next.js frontend | DONE | builds clean, 0 TS errors |
 
 ---
 

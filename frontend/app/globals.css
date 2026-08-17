@@ -1,0 +1,226 @@
+/* ─── Google Fonts: Noto Sans Devanagari + Inter ─────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@300;400;500;600;700;800;900&display=swap');
+
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─── Design Tokens ──────────────────────────────────────────────────────── */
+@theme inline {
+  --font-sans:    'Inter', 'Noto Sans Devanagari', system-ui, sans-serif;
+  --font-devanagari: 'Noto Sans Devanagari', 'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
+
+  /* 60 / 30 / 10 palette — off-white base, ink secondary, saffron accent */
+  --color-surface:        #F5F3EE; /* 60%: warm off-white */
+  --color-ink:            #0D0D0D; /* strong black */
+  --color-ink-secondary:  #3A3A3A;
+  --color-ink-muted:      #7A7572;
+  --color-panel:          #EDEAE3; /* 30%: warm light grey panels */
+  --color-panel-dark:     #1A1916; /* dark surface for accented areas */
+  --color-accent:         #E85D04; /* 10%: burnt saffron — Hindi warmth */
+  --color-accent-light:   #FF8400;
+  --color-accent-dim:     rgba(232, 93, 4, 0.12);
+  --color-glass:          rgba(245, 243, 238, 0.72);
+  --color-glass-dark:     rgba(13, 13, 13, 0.65);
+  --color-border-strong:  #0D0D0D;
+  --color-border-soft:    rgba(13, 13, 13, 0.12);
+
+  /* Radius */
+  --radius-pill:  9999px;
+  --radius-card:  0px;  /* brutalist: no radius on cards */
+
+  /* Existing shadcn tokens */
+  --color-background:           var(--background);
+  --color-foreground:           var(--foreground);
+  --color-ring:                 var(--ring);
+  --color-input:                var(--input);
+  --color-border:               var(--border);
+  --color-destructive:          var(--destructive);
+  --color-accent-foreground:    var(--accent-foreground);
+  --color-muted:                var(--muted);
+  --color-muted-foreground:     var(--muted-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary:            var(--secondary);
+  --color-primary-foreground:   var(--primary-foreground);
+  --color-primary:              var(--primary);
+  --color-card-foreground:      var(--card-foreground);
+  --color-card:                 var(--card);
+  --radius-sm:  calc(var(--radius) * 0.6);
+  --radius-md:  calc(var(--radius) * 0.8);
+  --radius-lg:  var(--radius);
+}
+
+/* ─── Root Variables ─────────────────────────────────────────────────────── */
+:root {
+  --background:          #F5F3EE;
+  --foreground:          #0D0D0D;
+  --card:                #EDEAE3;
+  --card-foreground:     #0D0D0D;
+  --popover:             #F5F3EE;
+  --popover-foreground:  #0D0D0D;
+  --primary:             #0D0D0D;
+  --primary-foreground:  #F5F3EE;
+  --secondary:           #EDEAE3;
+  --secondary-foreground:#0D0D0D;
+  --muted:               #EDEAE3;
+  --muted-foreground:    #7A7572;
+  --accent:              #E85D04;
+  --accent-foreground:   #F5F3EE;
+  --destructive:         #CC2200;
+  --border:              rgba(13,13,13,0.14);
+  --input:               rgba(13,13,13,0.10);
+  --ring:                #E85D04;
+  --radius:              0.375rem;
+
+  /* Navbar glass */
+  --navbar-bg:     rgba(245, 243, 238, 0.78);
+  --navbar-border: rgba(13, 13, 13, 0.14);
+  --navbar-shadow: 0 4px 32px rgba(13,13,13,0.08), 0 1px 4px rgba(13,13,13,0.06);
+
+  /* Scroll progress */
+  animation-timeline: scroll();
+}
+
+/* ─── Base Reset ─────────────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+    font-feature-settings: "kern" 1, "liga" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.65;
+    overflow-x: hidden;
+  }
+  /* Better Devanagari line-height */
+  :lang(hi), .devanagari {
+    font-family: var(--font-devanagari);
+    line-height: 1.8;
+    letter-spacing: 0.01em;
+  }
+  ::selection {
+    background: var(--accent);
+    color: #fff;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  /* Scroll progress bar */
+  @keyframes scrollProgress {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+}
+
+/* ─── Utility Classes ────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Brutalist border system */
+  .border-brutal      { border: 2px solid var(--foreground); }
+  .border-brutal-thin { border: 1.5px solid var(--foreground); }
+  .border-accent      { border: 2px solid var(--accent); }
+
+  /* Glass surface */
+  .glass {
+    background: var(--navbar-bg);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid var(--navbar-border);
+    box-shadow: var(--navbar-shadow);
+  }
+  .glass-dark {
+    background: var(--color-glass-dark);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.10);
+  }
+
+  /* Brutalist card */
+  .card-brutal {
+    background: var(--color-panel);
+    border: 2px solid var(--foreground);
+    transition: transform 80ms ease, box-shadow 80ms ease;
+  }
+  .card-brutal:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--foreground);
+  }
+
+  /* Accent block */
+  .accent-block {
+    background: var(--accent);
+    color: #fff;
+    border: 2px solid var(--accent);
+  }
+
+  /* Score bar */
+  .score-fill {
+    background: var(--accent);
+    height: 3px;
+    border-radius: 0;
+    transition: width 0.6s cubic-bezier(0.23,1,0.32,1);
+  }
+
+  /* Devanagari display */
+  .text-devanagari {
+    font-family: 'Noto Sans Devanagari', sans-serif;
+  }
+
+  /* Scroll hide for utility */
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .scrollbar-none { scrollbar-width: none; }
+
+  /* Animate-in classes for JS-driven reveals */
+  .reveal { opacity: 0; transform: translateY(28px); }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.23,1,0.32,1);
+  }
+
+  /* Reduced motion overrides */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal, .reveal.is-visible {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+  }
+
+  /* Loading pulse with accent */
+  .pulse-accent {
+    animation: pulseAccent 1.4s ease-in-out infinite;
+  }
+  @keyframes pulseAccent {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.45; }
+  }
+
+  /* Animated gradient border for active states */
+  .border-animated {
+    background: linear-gradient(var(--color-panel), var(--color-panel)) padding-box,
+                linear-gradient(90deg, var(--accent), var(--accent-light), var(--accent)) border-box;
+    border: 2px solid transparent;
+    animation: borderRotate 3s linear infinite;
+    background-size: 200% 200%;
+  }
+  @keyframes borderRotate {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+}
