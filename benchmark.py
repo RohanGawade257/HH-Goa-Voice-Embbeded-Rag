@@ -116,8 +116,8 @@ def main() -> None:
 
     print(f"\nRan {n} queries\n")
 
-    print(f"{'stage':<12}{'avg':>8}{'p50':>8}{'p95':>8}{'p99':>8}   (ms)")
-    print("-" * 52)
+    print(f"{'stage':<12}{'avg':>8}{'p50':>8}{'p95':>8}{'p99':>8}{'p100':>8}   (ms)")
+    print("-" * 60)
 
     stages = [
         ("embed",   embed_ms),
@@ -134,10 +134,11 @@ def main() -> None:
             f"{percentile(vals, 50):>8.2f}"
             f"{percentile(vals, 95):>8.2f}"
             f"{percentile(vals, 99):>8.2f}"
+            f"{max(vals):>8.2f}"
         )
 
     p95_total = percentile(total_ms, 95)
-    print(f"\nLatency budget: {LATENCY_BUDGET_MS} ms  |  p95 total: {p95_total:.2f} ms")
+    print(f"\nLatency budget: {LATENCY_BUDGET_MS} ms  |  p95 total: {p95_total:.2f} ms  |  p100 (max): {max(total_ms):.2f} ms")
 
     if p95_total <= LATENCY_BUDGET_MS:
         print("PASS: within budget")
