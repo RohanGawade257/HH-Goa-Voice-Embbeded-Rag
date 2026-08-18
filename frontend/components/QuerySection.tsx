@@ -84,7 +84,9 @@ export default function QuerySection() {
           const data = await queryVoice(blob);
           setTranscript(data.transcript);
           setQuery(data.transcript);
-          setResult(data);
+          // VoiceResponse uses `rag_timings`; AnswerCard expects `timings`.
+          // Normalise before storing so the shape is always QueryResponse.
+          setResult({ ...data, timings: data.rag_timings ?? data.timings });
           setState("success");
         } catch (e) {
           setError(
