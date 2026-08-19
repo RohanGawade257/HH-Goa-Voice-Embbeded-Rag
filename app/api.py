@@ -27,6 +27,18 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 from app.pipeline import RAGEngine
+from app.config import (
+    ANSWER_BACKEND,
+    EMBEDDING_DIM,
+    EMBEDDING_MODEL,
+    EMBEDDING_THREADS,
+    MAX_CONTEXT_CHARS,
+    MAX_NEW_TOKENS,
+    QDRANT_COLLECTION,
+    QDRANT_TOP_K,
+    TOP_CONTEXT_CHUNKS,
+    TOP_K_FINAL,
+)
 from app.voice.stt import transcribe_audio, stt_status
 
 
@@ -139,6 +151,8 @@ class TimingsResponse(BaseModel):
     embedding_ms: float
     qdrant_ms: float
     rerank_ms: float
+    compression_ms: float = 0.0
+    llm_ms: float = 0.0
     answer_ms: float
     total_ms: float
 
@@ -149,6 +163,7 @@ class SourceItem(BaseModel):
     passage_id: Optional[str]
     query_id: Optional[str]
     text: str
+    language: Optional[str] = None
     score: float
     vector_score: float
 
@@ -194,12 +209,12 @@ async def health():
     # to avoid opening a second connection (SQLite file lock conflict).
     try:
         collection_info = engine.client.get_collection(
-            "hh_goa_rag_hindi"
+            QDRANT_COLLECTION
         )
 
         qdrant_status = {
             "status": "ok",
-            "collection": "hh_goa_rag_hindi",
+            "collection": QDRANT_COLLECTION,
             "points": collection_info.points_count,
         }
 
@@ -216,12 +231,16 @@ async def health():
         "rag_engine": {
             "status": "loaded",
             "embedding_model": (
-                "sentence-transformers/"
-                "paraphrase-multilingual-MiniLM-L12-v2"
+                EMBEDDING_MODEL
             ),
-            "embedding_dim": 384,
-            "top_k_retrieval": 20,
-            "top_k_final": 3,
+            "embedding_dim": EMBEDDING_DIM,
+            "embedding_threads": EMBEDDING_THREADS,
+            "top_k_retrieval": QDRANT_TOP_K,
+            "top_k_final": TOP_K_FINAL,
+            "top_context_chunks": TOP_CONTEXT_CHUNKS,
+            "max_context_chars": MAX_CONTEXT_CHARS,
+            "answer_backend": ANSWER_BACKEND,
+            "max_new_tokens": MAX_NEW_TOKENS,
             "load_time_ms": round(_engine_load_ms, 0),
         },
 
@@ -254,7 +273,10 @@ async def query(request: QueryRequest):
 
     engine = get_engine()
 
-    result = engine.process(request.query)
+    result = engine.process(
+        request.query,
+        language=request.language,
+    )
 
     # Build sources list
     sources = []
@@ -266,6 +288,7 @@ async def query(request: QueryRequest):
                 passage_id=item.get("passage_id"),
                 query_id=str(item.get("query_id", "")),
                 text=item.get("text", ""),
+                language=item.get("language"),
                 score=float(item.get("score", 0.0)),
                 vector_score=float(item.get("vector_score", 0.0)),
             )
@@ -285,6 +308,8 @@ async def query(request: QueryRequest):
             embedding_ms=float(timings.get("embedding_ms", 0)),
             qdrant_ms=float(timings.get("qdrant_ms", 0)),
             rerank_ms=float(timings.get("rerank_ms", 0)),
+            compression_ms=float(timings.get("compression_ms", 0)),
+            llm_ms=float(timings.get("llm_ms", 0)),
             answer_ms=float(timings.get("answer_ms", 0)),
             total_ms=float(timings.get("total_ms", 0)),
         ),
@@ -386,7 +411,10 @@ async def voice(
 
     engine = get_engine()
 
-    rag_result = engine.process(transcript)
+    rag_result = engine.process(
+        transcript,
+        language=language,
+    )
 
     # Build sources list
     sources = []
@@ -398,6 +426,7 @@ async def voice(
                 passage_id=item.get("passage_id"),
                 query_id=str(item.get("query_id", "")),
                 text=item.get("text", ""),
+                language=item.get("language"),
                 score=float(item.get("score", 0.0)),
                 vector_score=float(item.get("vector_score", 0.0)),
             )
@@ -429,6 +458,12 @@ async def voice(
             ),
             rerank_ms=float(
                 timings.get("rerank_ms", 0)
+            ),
+            compression_ms=float(
+                timings.get("compression_ms", 0)
+            ),
+            llm_ms=float(
+                timings.get("llm_ms", 0)
             ),
             answer_ms=float(
                 timings.get("answer_ms", 0)

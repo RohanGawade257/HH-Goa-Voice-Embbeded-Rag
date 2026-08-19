@@ -1,10 +1,22 @@
 import time
 import re
 
+from app.config import (
+    ANSWER_BACKEND,
+    EMBEDDING_DIM,
+    EMBEDDING_MODEL,
+    EMBEDDING_THREADS,
+    QDRANT_COLLECTION,
+    QDRANT_PATH,
+    QDRANT_TOP_K,
+    TOP_K_FINAL,
+)
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 
 from app.answer_generator import generate_extractive_answer
+from app.context_compressor import compress_context
+from app.generation.llm import QwenAnswerGenerator
 
 
 # ============================================================
@@ -34,21 +46,73 @@ from app.answer_generator import generate_extractive_answer
 # CONFIG
 # ============================================================
 
-COLLECTION_NAME = "hh_goa_rag_hindi"
+COLLECTION_NAME = QDRANT_COLLECTION
 
-QDRANT_PATH = "data/qdrant"
+MODEL_NAME = EMBEDDING_MODEL
 
-MODEL_NAME = (
-    "sentence-transformers/"
-    "paraphrase-multilingual-MiniLM-L12-v2"
-)
-
-TOP_K_RETRIEVAL = 20
-TOP_K_FINAL = 3
+TOP_K_RETRIEVAL = QDRANT_TOP_K
 
 VECTOR_WEIGHT = 0.70
 LEXICAL_WEIGHT = 0.20
 PHRASE_WEIGHT = 0.10
+
+SUPPORTED_LANGUAGES = {
+    "as",
+    "bn",
+    "gu",
+    "hi",
+    "kn",
+    "ml",
+    "mr",
+    "ne",
+    "or",
+    "pa",
+    "sa",
+    "ta",
+    "ur",
+}
+
+
+def normalize_language_code(language):
+
+    if not language:
+
+        return None
+
+    code = str(language).strip().lower()
+
+    if "-" in code:
+
+        code = code.split("-", 1)[0]
+
+    if "_" in code:
+
+        code = code.split("_", 1)[0]
+
+    if code in SUPPORTED_LANGUAGES:
+
+        return code
+
+    return None
+
+
+def configure_embedding_threads():
+
+    try:
+
+        import torch
+
+    except ImportError:
+
+        return None
+
+    torch.set_num_threads(
+        EMBEDDING_THREADS
+    )
+
+    return int(
+        torch.get_num_threads()
+    )
 
 
 # ============================================================
@@ -303,6 +367,14 @@ class RAGEngine:
 
     def __init__(self):
 
+        self.embedding_threads = configure_embedding_threads()
+
+        if self.embedding_threads is not None:
+
+            print(
+                f"Embedding threads: {self.embedding_threads}"
+            )
+
         print(
             "Loading embedding model..."
         )
@@ -310,6 +382,22 @@ class RAGEngine:
         self.embedder = SentenceTransformer(
             MODEL_NAME
         )
+
+        self.answer_generator = QwenAnswerGenerator()
+
+        if ANSWER_BACKEND in {"qwen", "qwen_api"}:
+
+            if self.answer_generator.available:
+
+                print(
+                    f"Qwen loaded in {self.answer_generator.load_ms:.0f} ms"
+                )
+
+            else:
+
+                print(
+                    f"Qwen unavailable: {self.answer_generator.load_error}"
+                )
 
         print(
             "Opening Qdrant..."
@@ -323,11 +411,17 @@ class RAGEngine:
             "RAG engine ready."
         )
 
+    def close(self):
+
+        self.answer_generator.close()
+
+        self.client.close()
+
     # ========================================================
     # PROCESS QUERY
     # ========================================================
 
-    def process(self, query: str):
+    def process(self, query: str, language=None):
 
         pipeline_start = time.perf_counter()
 
@@ -354,6 +448,8 @@ class RAGEngine:
                     "embedding_ms": 0.0,
                     "qdrant_ms": 0.0,
                     "rerank_ms": 0.0,
+                    "compression_ms": 0.0,
+                    "llm_ms": 0.0,
                     "answer_ms": 0.0,
                     "total_ms": 0.0
                 }
@@ -377,7 +473,7 @@ class RAGEngine:
         ) * 1000
 
         # ====================================================
-        # 2. QDRANT TOP-20 RETRIEVAL
+        # 2. QDRANT RETRIEVAL
         # ====================================================
 
         start = time.perf_counter()
@@ -395,6 +491,7 @@ class RAGEngine:
                 "passage_id",
                 "query_id",
                 "text",
+                "language",
                 "is_selected",
                 "chunk_strategy",
                 "word_count"
@@ -442,6 +539,10 @@ class RAGEngine:
                     "text": payload.get(
                         "text",
                         ""
+                    ),
+
+                    "language": payload.get(
+                        "language"
                     ),
 
                     "vector_score": float(
@@ -516,6 +617,10 @@ class RAGEngine:
                         ""
                     ),
 
+                    "language": payload.get(
+                        "language"
+                    ),
+
                     "score": final_score,
 
                     "vector_score": vector_score,
@@ -535,15 +640,69 @@ class RAGEngine:
             )
 
         # ====================================================
-        # 6. ANSWER GENERATION
+        # 6. CONTEXT COMPRESSION
+        # ====================================================
+
+        compression_result = compress_context(
+            query,
+            top3_results
+        )
+
+        compression_ms = compression_result[
+            "latency_ms"
+        ]
+
+        # ====================================================
+        # 7. ANSWER GENERATION
         # ====================================================
 
         answer_start = time.perf_counter()
 
-        answer_result = generate_extractive_answer(
-            query,
-            top3_results
-        )
+        if ANSWER_BACKEND in {"qwen", "qwen_api"}:
+
+            language_code = normalize_language_code(
+                language
+            )
+
+            if language_code is None and top3_results:
+
+                language_code = normalize_language_code(
+                    top3_results[0].get(
+                        "language"
+                    )
+                )
+
+            if language_code is None and top3_results:
+
+                language_code = top3_results[0].get(
+                    "language"
+                )
+
+            answer_result = self.answer_generator.generate(
+                query,
+                language_code or "",
+                compression_result["context"]
+            )
+
+        else:
+
+            compressed_results = [
+                {
+                    "text": snippet["text"],
+                    "score": snippet.get(
+                        "score",
+                        0.0
+                    ),
+                }
+                for snippet in compression_result[
+                    "snippets"
+                ]
+            ]
+
+            answer_result = generate_extractive_answer(
+                query,
+                compressed_results
+            )
 
         answer_ms = (
             time.perf_counter()
@@ -593,6 +752,21 @@ class RAGEngine:
                 "top3": top3_results
             },
 
+            "compressed_context": {
+                "chars_before": compression_result[
+                    "before_chars"
+                ],
+                "chars_after": compression_result[
+                    "after_chars"
+                ],
+                "compression_ratio": compression_result[
+                    "compression_ratio"
+                ],
+                "snippets": len(
+                    compression_result["snippets"]
+                )
+            },
+
             "retrieved_chunks": len(
                 top3_results
             ),
@@ -615,6 +789,19 @@ class RAGEngine:
 
                 "rerank_ms": round(
                     rerank_ms,
+                    2
+                ),
+
+                "compression_ms": round(
+                    compression_ms,
+                    2
+                ),
+
+                "llm_ms": round(
+                    answer_result.get(
+                        "latency_ms",
+                        answer_ms
+                    ),
                     2
                 ),
 

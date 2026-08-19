@@ -1,0 +1,84 @@
+{
+  "collection": "hh_goa_rag_multilingual",
+  "queries": 500,
+  "query_counts_by_language": {
+    "as": 39,
+    "bn": 39,
+    "gu": 39,
+    "hi": 39,
+    "kn": 39,
+    "ml": 39,
+    "mr": 38,
+    "ne": 38,
+    "or": 38,
+    "pa": 38,
+    "sa": 38,
+    "ta": 38,
+    "ur": 38
+  },
+  "stage_stats": {
+    "embedding": {
+      "avg_ms": 37.54,
+      "p50_ms": 36.47,
+      "p95_ms": 51.25,
+      "p99_ms": 73.4,
+      "p100_ms": 142.01
+    },
+    "qdrant": {
+      "avg_ms": 23.29,
+      "p50_ms": 22.9,
+      "p95_ms": 24.71,
+      "p99_ms": 26.11,
+      "p100_ms": 122.16
+    },
+    "rerank": {
+      "avg_ms": 0.4,
+      "p50_ms": 0.34,
+      "p95_ms": 0.63,
+      "p99_ms": 0.93,
+      "p100_ms": 7.49
+    },
+    "compression": {
+      "avg_ms": 0.17,
+      "p50_ms": 0.14,
+      "p95_ms": 0.3,
+      "p99_ms": 0.45,
+      "p100_ms": 1.89
+    },
+    "llm": {
+      "avg_ms": 0.12,
+      "p50_ms": 0.09,
+      "p95_ms": 0.18,
+      "p99_ms": 0.28,
+      "p100_ms": 4.2
+    },
+    "answer": {
+      "avg_ms": 0.12,
+      "p50_ms": 0.1,
+      "p95_ms": 0.18,
+      "p99_ms": 0.28,
+      "p100_ms": 4.21
+    },
+    "total": {
+      "avg_ms": 61.58,
+      "p50_ms": 60.22,
+      "p95_ms": 75.67,
+      "p99_ms": 99.38,
+      "p100_ms": 222.67
+    }
+  },
+  "recall": {
+    "recall_at_1": 14.2,
+    "recall_at_5": 17.8,
+    "recall_at_10": 17.8
+  },
+  "blocked_percent": 9.8,
+  "context": {
+    "before_avg_chars": 213.35,
+    "before_p95_chars": 500.15,
+    "after_avg_chars": 139.97,
+    "after_p95_chars": 327.15
+  },
+  "latency_budget_ms": 200,
+  "budget_pass": true
+}
