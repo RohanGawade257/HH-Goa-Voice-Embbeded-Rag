@@ -1,0 +1,288 @@
+{
+  "input_file": "data\\processed\\multilingual\\passages.jsonl",
+  "output_file": "data\\processed\\multilingual\\chunks.jsonl",
+  "chunk_parameters": {
+    "short_limit": 80,
+    "medium_limit": 180,
+    "target_words": 100,
+    "max_words": 140,
+    "overlap_sentences": 1,
+    "fallback_words": 120,
+    "fallback_overlap_words": 20
+  },
+  "languages": [
+    {
+      "language": "as",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 400,
+      "short_passages_removed": 148,
+      "excluded_corrupted_records": 1,
+      "output_passages": 451,
+      "output_chunks": 451,
+      "min_chunk_words": 5,
+      "max_chunk_words": 77,
+      "average_chunk_words": 17.03,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 451
+      }
+    },
+    {
+      "language": "bn",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 5,
+      "short_passages_removed": 532,
+      "excluded_corrupted_records": 1,
+      "output_passages": 462,
+      "output_chunks": 474,
+      "min_chunk_words": 5,
+      "max_chunk_words": 120,
+      "average_chunk_words": 19.71,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 460,
+        "long_sentence_fallback": 14
+      }
+    },
+    {
+      "language": "gu",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 0,
+      "short_passages_removed": 529,
+      "excluded_corrupted_records": 1,
+      "output_passages": 470,
+      "output_chunks": 485,
+      "min_chunk_words": 5,
+      "max_chunk_words": 120,
+      "average_chunk_words": 20.92,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 466,
+        "long_sentence_fallback": 9,
+        "adaptive_window": 10
+      }
+    },
+    {
+      "language": "hi",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 0,
+      "short_passages_removed": 529,
+      "excluded_corrupted_records": 0,
+      "output_passages": 471,
+      "output_chunks": 490,
+      "min_chunk_words": 5,
+      "max_chunk_words": 120,
+      "average_chunk_words": 25.17,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 467,
+        "sentence_group": 3,
+        "long_sentence_fallback": 20
+      }
+    },
+    {
+      "language": "kn",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 2,
+      "short_passages_removed": 557,
+      "excluded_corrupted_records": 0,
+      "output_passages": 441,
+      "output_chunks": 453,
+      "min_chunk_words": 5,
+      "max_chunk_words": 120,
+      "average_chunk_words": 17.72,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 438,
+        "long_sentence_fallback": 15
+      }
+    },
+    {
+      "language": "ml",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 0,
+      "short_passages_removed": 557,
+      "excluded_corrupted_records": 1,
+      "output_passages": 442,
+      "output_chunks": 445,
+      "min_chunk_words": 5,
+      "max_chunk_words": 120,
+      "average_chunk_words": 14.05,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 441,
+        "adaptive_window": 1,
+        "long_sentence_fallback": 3
+      }
+    },
+    {
+      "language": "mr",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 10,
+      "short_passages_removed": 548,
+      "excluded_corrupted_records": 0,
+      "output_passages": 442,
+      "output_chunks": 448,
+      "min_chunk_words": 5,
+      "max_chunk_words": 120,
+      "average_chunk_words": 17.98,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 441,
+        "long_sentence_fallback": 7
+      }
+    },
+    {
+      "language": "ne",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 11,
+      "short_passages_removed": 535,
+      "excluded_corrupted_records": 0,
+      "output_passages": 454,
+      "output_chunks": 490,
+      "min_chunk_words": 5,
+      "max_chunk_words": 120,
+      "average_chunk_words": 23.91,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 451,
+        "long_sentence_fallback": 39
+      }
+    },
+    {
+      "language": "or",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 0,
+      "short_passages_removed": 542,
+      "excluded_corrupted_records": 1,
+      "output_passages": 457,
+      "output_chunks": 459,
+      "min_chunk_words": 5,
+      "max_chunk_words": 120,
+      "average_chunk_words": 17.78,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 456,
+        "long_sentence_fallback": 3
+      }
+    },
+    {
+      "language": "pa",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 400,
+      "short_passages_removed": 129,
+      "excluded_corrupted_records": 0,
+      "output_passages": 471,
+      "output_chunks": 493,
+      "min_chunk_words": 5,
+      "max_chunk_words": 120,
+      "average_chunk_words": 26.0,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 463,
+        "long_sentence_fallback": 26,
+        "sentence_group": 4
+      }
+    },
+    {
+      "language": "sa",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 0,
+      "short_passages_removed": 569,
+      "excluded_corrupted_records": 0,
+      "output_passages": 431,
+      "output_chunks": 431,
+      "min_chunk_words": 5,
+      "max_chunk_words": 64,
+      "average_chunk_words": 13.71,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 431
+      }
+    },
+    {
+      "language": "ta",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 0,
+      "short_passages_removed": 549,
+      "excluded_corrupted_records": 0,
+      "output_passages": 451,
+      "output_chunks": 451,
+      "min_chunk_words": 5,
+      "max_chunk_words": 68,
+      "average_chunk_words": 15.18,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 451
+      }
+    },
+    {
+      "language": "ur",
+      "input_records": 1000,
+      "input_passages": 1000,
+      "duplicates_removed": 412,
+      "short_passages_removed": 112,
+      "excluded_corrupted_records": 0,
+      "output_passages": 476,
+      "output_chunks": 476,
+      "min_chunk_words": 5,
+      "max_chunk_words": 98,
+      "average_chunk_words": 22.76,
+      "chunks_with_missing_language": 0,
+      "chunks_containing_replacement": 0,
+      "strategy_counts": {
+        "intact": 472,
+        "sentence_group": 4
+      }
+    }
+  ],
+  "totals": {
+    "input_records": 13000,
+    "input_passages": 13000,
+    "duplicates_removed": 1240,
+    "short_passages_removed": 5836,
+    "excluded_corrupted_records": 5,
+    "output_passages": 5919,
+    "output_chunks": 6046,
+    "chunks_with_missing_language": 0,
+    "chunks_containing_replacement": 0,
+    "maximum_chunk_words": 120
+  },
+  "validation": {
+    "errors": [],
+    "invalid_json_records": 0,
+    "missing_language": 0,
+    "unknown_language": 0,
+    "oversized_chunks": 0,
+    "empty_text": 0,
+    "e5_prefixes": 0,
+    "invalid_passage_refs": 0,
+    "unique_chunk_ids": 6046,
+    "valid_passage_ids": 5919,
+    "missing_language_from_stats": 0
+  }
+}

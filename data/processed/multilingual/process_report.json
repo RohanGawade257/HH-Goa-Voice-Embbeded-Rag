@@ -1,0 +1,165 @@
+{
+  "source_dir": "data\\multilingual_repaired",
+  "output_file": "data\\processed\\multilingual\\passages.jsonl",
+  "supported_languages": [
+    "as",
+    "bn",
+    "gu",
+    "hi",
+    "kn",
+    "ml",
+    "mr",
+    "ne",
+    "or",
+    "pa",
+    "sa",
+    "ta",
+    "ur"
+  ],
+  "min_words": 5,
+  "schema_counts": {
+    "query|Answer|query_id|query_type": 13000
+  },
+  "invalid_json_records": 0,
+  "languages": [
+    {
+      "language": "as",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 400,
+      "short_passages_removed": 148,
+      "excluded_corrupted_records": 1,
+      "output_passages": 451
+    },
+    {
+      "language": "bn",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 5,
+      "short_passages_removed": 532,
+      "excluded_corrupted_records": 1,
+      "output_passages": 462
+    },
+    {
+      "language": "gu",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 0,
+      "short_passages_removed": 529,
+      "excluded_corrupted_records": 1,
+      "output_passages": 470
+    },
+    {
+      "language": "hi",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 0,
+      "short_passages_removed": 529,
+      "excluded_corrupted_records": 0,
+      "output_passages": 471
+    },
+    {
+      "language": "kn",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 2,
+      "short_passages_removed": 557,
+      "excluded_corrupted_records": 0,
+      "output_passages": 441
+    },
+    {
+      "language": "ml",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 0,
+      "short_passages_removed": 557,
+      "excluded_corrupted_records": 1,
+      "output_passages": 442
+    },
+    {
+      "language": "mr",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 10,
+      "short_passages_removed": 548,
+      "excluded_corrupted_records": 0,
+      "output_passages": 442
+    },
+    {
+      "language": "ne",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 11,
+      "short_passages_removed": 535,
+      "excluded_corrupted_records": 0,
+      "output_passages": 454
+    },
+    {
+      "language": "or",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 0,
+      "short_passages_removed": 542,
+      "excluded_corrupted_records": 1,
+      "output_passages": 457
+    },
+    {
+      "language": "pa",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 400,
+      "short_passages_removed": 129,
+      "excluded_corrupted_records": 0,
+      "output_passages": 471
+    },
+    {
+      "language": "sa",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 0,
+      "short_passages_removed": 569,
+      "excluded_corrupted_records": 0,
+      "output_passages": 431
+    },
+    {
+      "language": "ta",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 0,
+      "short_passages_removed": 549,
+      "excluded_corrupted_records": 0,
+      "output_passages": 451
+    },
+    {
+      "language": "ur",
+      "input_records": 1000,
+      "invalid_json_records": 0,
+      "input_passages": 1000,
+      "duplicates_removed": 412,
+      "short_passages_removed": 112,
+      "excluded_corrupted_records": 0,
+      "output_passages": 476
+    }
+  ],
+  "totals": {
+    "input_records": 13000,
+    "invalid_json_records": 0,
+    "input_passages": 13000,
+    "duplicates_removed": 1240,
+    "short_passages_removed": 5836,
+    "excluded_corrupted_records": 5,
+    "output_passages": 5919
+  }
+}
