@@ -142,6 +142,93 @@ def phrase_score(
     return 0.0
 
 
+def build_query_features(query: str):
+
+    normalized_query = normalize(query)
+
+    query_tokens = set(
+        WORD_RE.findall(
+            normalized_query
+        )
+    )
+
+    phrases = []
+
+    query_words = normalized_query.split()
+
+    if len(query_words) >= 3:
+
+        for size in (3, 4):
+
+            for i in range(
+                len(query_words) - size + 1
+            ):
+
+                phrases.append(
+                    " ".join(
+                        query_words[
+                            i:i + size
+                        ]
+                    )
+                )
+
+    return normalized_query, query_tokens, phrases
+
+
+def score_document(
+    normalized_query,
+    query_tokens,
+    query_phrases,
+    document
+):
+
+    normalized_document = normalize(
+        document
+    )
+
+    document_tokens = set(
+        WORD_RE.findall(
+            normalized_document
+        )
+    )
+
+    if query_tokens and document_tokens:
+
+        lexical_score = (
+            len(
+                query_tokens.intersection(
+                    document_tokens
+                )
+            )
+            / len(query_tokens)
+        )
+
+    else:
+
+        lexical_score = 0.0
+
+    if not normalized_query:
+
+        exact_phrase_score = 0.0
+
+    elif normalized_query in normalized_document:
+
+        exact_phrase_score = 1.0
+
+    elif any(
+        phrase in normalized_document
+        for phrase in query_phrases
+    ):
+
+        exact_phrase_score = 0.7
+
+    else:
+
+        exact_phrase_score = 0.0
+
+    return lexical_score, exact_phrase_score
+
+
 # ============================================================
 # FAST RERANK
 # ============================================================
@@ -150,6 +237,14 @@ def rerank(query, hits):
 
     if not hits:
         return []
+
+    (
+        normalized_query,
+        query_tokens,
+        query_phrases
+    ) = build_query_features(
+        query
+    )
 
     scores = []
 
@@ -166,13 +261,13 @@ def rerank(query, hits):
             hit.score
         )
 
-        lexical_score = lexical_overlap(
-            query,
-            text
-        )
-
-        exact_phrase_score = phrase_score(
-            query,
+        (
+            lexical_score,
+            exact_phrase_score
+        ) = score_document(
+            normalized_query,
+            query_tokens,
+            query_phrases,
             text
         )
 
