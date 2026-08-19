@@ -57,14 +57,15 @@ def compress_context(
     start = time.perf_counter()
     tokens = query_tokens(query)
     snippets = []
-    seen = set()
+    seen_sentences = set()
+    used_chars = 0
     before_chars = sum(
         len(str(result.get("text", "")).strip())
         for result in reranked_results
         if result.get("text")
     )
 
-    for result in reranked_results[:top_context_chunks]:
+    for result in reranked_results[: max(0, top_context_chunks)]:
         text = str(result.get("text", "")).strip()
         if not text:
             continue
@@ -85,16 +86,20 @@ def compress_context(
         scored.sort(key=lambda item: item[0], reverse=True)
 
         selected = sorted(scored[:2], key=lambda item: item[1])
-        snippet = " ".join(sentence for _, _, sentence in selected).strip()
+        unique_sentences = []
+        for _, _, sentence in selected:
+            normalized = normalize(sentence)
+            if not normalized or normalized in seen_sentences:
+                continue
+            seen_sentences.add(normalized)
+            unique_sentences.append(sentence)
+
+        snippet = " ".join(unique_sentences).strip()
         if not snippet:
-            snippet = text
-
-        normalized = normalize(snippet)
-        if normalized in seen:
             continue
-        seen.add(normalized)
 
-        remaining = max_context_chars - sum(len(item["text"]) for item in snippets)
+        separator_chars = 1 if snippets else 0
+        remaining = max_context_chars - used_chars - separator_chars
         if remaining <= 0:
             break
         if len(snippet) > remaining:
@@ -106,8 +111,9 @@ def compress_context(
                 "score": base_score,
             }
         )
+        used_chars += separator_chars + len(snippet)
 
-        if sum(len(item["text"]) for item in snippets) >= max_context_chars:
+        if used_chars >= max_context_chars:
             break
 
     context_text = "\n".join(

@@ -1,4 +1,14 @@
 import os
+from pathlib import Path
+
+try:
+    from dotenv import load_dotenv
+except ImportError:  # Environment variables still work without the optional helper.
+    load_dotenv = None
+
+
+if load_dotenv is not None:
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
 
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
@@ -41,12 +51,24 @@ EMBEDDING_THREADS = get_int("EMBEDDING_THREADS", 4)
 TOP_CONTEXT_CHUNKS = get_int("TOP_CONTEXT_CHUNKS", 2)
 MAX_CONTEXT_CHARS = get_int("MAX_CONTEXT_CHARS", 1200)
 
-ANSWER_BACKEND = os.getenv("ANSWER_BACKEND", "extractive").strip().lower()
-HF_API_KEY = os.getenv("HF_API_KEY") or os.getenv("HF_TOKEN") or ""
-HF_CHAT_COMPLETIONS_URL = os.getenv(
-    "HF_CHAT_COMPLETIONS_URL",
-    "https://router.huggingface.co/v1/chat/completions",
+ANSWER_BACKEND = os.getenv("ANSWER_BACKEND", "qwen_api").strip().lower()
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "huggingface").strip().lower()
+LLM_API_KEY = (
+    os.getenv("LLM_API_KEY")
+    or os.getenv("HF_API_KEY")
+    or os.getenv("HF_TOKEN")
+    or ""
 )
+LLM_CHAT_COMPLETIONS_URL = os.getenv(
+    "LLM_CHAT_COMPLETIONS_URL",
+    os.getenv(
+        "HF_CHAT_COMPLETIONS_URL",
+        "https://router.huggingface.co/v1/chat/completions",
+    ),
+)
+# Backward-compatible aliases for existing Hugging Face environment files.
+HF_API_KEY = LLM_API_KEY
+HF_CHAT_COMPLETIONS_URL = LLM_CHAT_COMPLETIONS_URL
 QWEN_MODEL = os.getenv("QWEN_MODEL", "Qwen/Qwen3-0.6B")
 MAX_NEW_TOKENS = get_int("MAX_NEW_TOKENS", 64)
 LLM_TIMEOUT_SECONDS = get_float("LLM_TIMEOUT_SECONDS", 5.0)

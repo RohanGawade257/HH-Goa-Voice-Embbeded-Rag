@@ -390,7 +390,7 @@ class RAGEngine:
             if self.answer_generator.available:
 
                 print(
-                    f"Qwen loaded in {self.answer_generator.load_ms:.0f} ms"
+                    f"Qwen API client ready in {self.answer_generator.load_ms:.0f} ms"
                 )
 
             else:
@@ -722,6 +722,12 @@ class RAGEngine:
         # 8. FINAL RESULT
         # ====================================================
 
+        llm_ms = (
+            answer_result.get("latency_ms", answer_ms)
+            if ANSWER_BACKEND in {"qwen", "qwen_api"}
+            else 0.0
+        )
+
         return {
 
             "query": query,
@@ -797,13 +803,7 @@ class RAGEngine:
                     2
                 ),
 
-                "llm_ms": round(
-                    answer_result.get(
-                        "latency_ms",
-                        answer_ms
-                    ),
-                    2
-                ),
+                "llm_ms": round(llm_ms, 2),
 
                 "answer_ms": round(
                     answer_ms,

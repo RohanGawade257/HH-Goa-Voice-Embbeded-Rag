@@ -25,7 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from app.config import QDRANT_COLLECTION
+from app.config import ANSWER_BACKEND, LLM_PROVIDER, QDRANT_COLLECTION, QWEN_MODEL
 from app.pipeline import RAGEngine
 
 
@@ -124,6 +124,11 @@ def main() -> None:
     )
     parser.add_argument("--max-queries", type=int, default=500)
     parser.add_argument("--warmup", type=int, default=20)
+    parser.add_argument(
+        "--require-live-llm",
+        action="store_true",
+        help="Fail if ANSWER_BACKEND is qwen_api but the API client is not configured.",
+    )
     args = parser.parse_args()
 
     max_queries = None if args.max_queries == 0 else args.max_queries
@@ -136,9 +141,17 @@ def main() -> None:
     print("=" * 70)
     print(f"Collection : {QDRANT_COLLECTION}")
     print(f"Queries    : {len(queries)}")
+    print(f"Answer     : {ANSWER_BACKEND}")
     print("Loading engine once...")
 
     engine = RAGEngine()
+    live_llm_measured = (
+        ANSWER_BACKEND in {"qwen", "qwen_api"}
+        and engine.answer_generator.available
+    )
+    if args.require_live_llm and not live_llm_measured:
+        engine.close()
+        raise SystemExit("Live LLM benchmark required, but the Qwen API client is unavailable.")
 
     warmups = queries[: min(args.warmup, len(queries))]
     print(f"Warmup     : {len(warmups)}")
@@ -185,7 +198,7 @@ def main() -> None:
         context_before.append(int(compressed.get("chars_before", 0)))
         context_after.append(int(compressed.get("chars_after", 0)))
 
-        sources = result.get("sources", [])
+        sources = result.get("retrieval", {}).get("top20", [])
         for rank in (1, 5, 10):
             if target_found(item, sources, rank):
                 recall[rank] += 1
@@ -207,6 +220,10 @@ def main() -> None:
     }
     report = {
         "collection": QDRANT_COLLECTION,
+        "answer_backend": ANSWER_BACKEND,
+        "llm_provider": LLM_PROVIDER,
+        "llm_model": QWEN_MODEL,
+        "live_llm_measured": live_llm_measured,
         "queries": len(queries),
         "query_counts_by_language": dict(query_counts),
         "stage_stats": stage_stats,
@@ -246,6 +263,8 @@ def main() -> None:
     print(f"Before avg/p95 chars: {report['context']['before_avg_chars']} / {report['context']['before_p95_chars']}")
     print(f"After  avg/p95 chars: {report['context']['after_avg_chars']} / {report['context']['after_p95_chars']}")
     print(f"\nP95 total < {LATENCY_BUDGET_MS} ms: {report['budget_pass']}")
+    if not live_llm_measured:
+        print("Live LLM API latency was not measured in this run.")
     print(f"Report: {REPORT_FILE}")
     engine.close()
 

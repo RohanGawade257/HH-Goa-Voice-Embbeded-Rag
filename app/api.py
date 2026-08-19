@@ -34,6 +34,9 @@ from app.config import (
     EMBEDDING_THREADS,
     MAX_CONTEXT_CHARS,
     MAX_NEW_TOKENS,
+    LLM_PROVIDER,
+    LLM_TIMEOUT_SECONDS,
+    QWEN_MODEL,
     QDRANT_COLLECTION,
     QDRANT_TOP_K,
     TOP_CONTEXT_CHUNKS,
@@ -125,6 +128,15 @@ def get_engine() -> RAGEngine:
 async def startup_event():
     """Pre-load the RAG engine on startup."""
     get_engine()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Release the persistent Qdrant and HTTP clients."""
+    global _engine
+    if _engine is not None:
+        _engine.close()
+        _engine = None
 
 
 # ============================================================
@@ -240,6 +252,10 @@ async def health():
             "top_context_chunks": TOP_CONTEXT_CHUNKS,
             "max_context_chars": MAX_CONTEXT_CHARS,
             "answer_backend": ANSWER_BACKEND,
+            "llm_provider": LLM_PROVIDER,
+            "llm_model": QWEN_MODEL,
+            "llm_timeout_seconds": LLM_TIMEOUT_SECONDS,
+            "llm_available": engine.answer_generator.available,
             "max_new_tokens": MAX_NEW_TOKENS,
             "load_time_ms": round(_engine_load_ms, 0),
         },
@@ -249,9 +265,8 @@ async def health():
         "stt": stt_status(),
 
         "performance_target": {
-            "post_stt_p50_target_ms": 200,
-            "last_benchmark_p50_ms": 38.1,
-            "status": "PASS",
+            "post_stt_p95_target_ms": 200,
+            "requires_live_llm_benchmark": ANSWER_BACKEND in {"qwen", "qwen_api"},
         },
     }
 
