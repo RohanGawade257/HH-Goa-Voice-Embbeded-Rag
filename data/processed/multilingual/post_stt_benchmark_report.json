@@ -1,84 +1,72 @@
 {
   "collection": "hh_goa_rag_multilingual",
-  "queries": 500,
+  "queries": 1,
   "query_counts_by_language": {
-    "as": 39,
-    "bn": 39,
-    "gu": 39,
-    "hi": 39,
-    "kn": 39,
-    "ml": 39,
-    "mr": 38,
-    "ne": 38,
-    "or": 38,
-    "pa": 38,
-    "sa": 38,
-    "ta": 38,
-    "ur": 38
+    "as": 1
   },
   "stage_stats": {
     "embedding": {
-      "avg_ms": 37.54,
-      "p50_ms": 36.47,
-      "p95_ms": 51.25,
-      "p99_ms": 73.4,
-      "p100_ms": 142.01
+      "avg_ms": 859.11,
+      "p50_ms": 859.11,
+      "p95_ms": 859.11,
+      "p99_ms": 859.11,
+      "p100_ms": 859.11
     },
     "qdrant": {
-      "avg_ms": 23.29,
-      "p50_ms": 22.9,
-      "p95_ms": 24.71,
-      "p99_ms": 26.11,
-      "p100_ms": 122.16
+      "avg_ms": 97.55,
+      "p50_ms": 97.55,
+      "p95_ms": 97.55,
+      "p99_ms": 97.55,
+      "p100_ms": 97.55
     },
     "rerank": {
-      "avg_ms": 0.4,
-      "p50_ms": 0.34,
-      "p95_ms": 0.63,
-      "p99_ms": 0.93,
-      "p100_ms": 7.49
+      "avg_ms": 2.02,
+      "p50_ms": 2.02,
+      "p95_ms": 2.02,
+      "p99_ms": 2.02,
+      "p100_ms": 2.02
     },
     "compression": {
-      "avg_ms": 0.17,
-      "p50_ms": 0.14,
-      "p95_ms": 0.3,
-      "p99_ms": 0.45,
-      "p100_ms": 1.89
+      "avg_ms": 0.64,
+      "p50_ms": 0.64,
+      "p95_ms": 0.64,
+      "p99_ms": 0.64,
+      "p100_ms": 0.64
     },
     "llm": {
-      "avg_ms": 0.12,
-      "p50_ms": 0.09,
-      "p95_ms": 0.18,
-      "p99_ms": 0.28,
-      "p100_ms": 4.2
+      "avg_ms": 0.0,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "p99_ms": 0.0,
+      "p100_ms": 0.0
     },
     "answer": {
-      "avg_ms": 0.12,
-      "p50_ms": 0.1,
-      "p95_ms": 0.18,
-      "p99_ms": 0.28,
-      "p100_ms": 4.21
+      "avg_ms": 0.03,
+      "p50_ms": 0.03,
+      "p95_ms": 0.03,
+      "p99_ms": 0.03,
+      "p100_ms": 0.03
     },
     "total": {
-      "avg_ms": 61.58,
-      "p50_ms": 60.22,
-      "p95_ms": 75.67,
-      "p99_ms": 99.38,
-      "p100_ms": 222.67
+      "avg_ms": 959.86,
+      "p50_ms": 959.86,
+      "p95_ms": 959.86,
+      "p99_ms": 959.86,
+      "p100_ms": 959.86
     }
   },
   "recall": {
-    "recall_at_1": 14.2,
-    "recall_at_5": 17.8,
-    "recall_at_10": 17.8
+    "recall_at_1": 0.0,
+    "recall_at_5": 0.0,
+    "recall_at_10": 0.0
   },
-  "blocked_percent": 9.8,
+  "blocked_percent": 100.0,
   "context": {
-    "before_avg_chars": 213.35,
-    "before_p95_chars": 500.15,
-    "after_avg_chars": 139.97,
-    "after_p95_chars": 327.15
+    "before_avg_chars": 188,
+    "before_p95_chars": 188,
+    "after_avg_chars": 121,
+    "after_p95_chars": 121
   },
   "latency_budget_ms": 200,
-  "budget_pass": true
+  "budget_pass": false
 }
