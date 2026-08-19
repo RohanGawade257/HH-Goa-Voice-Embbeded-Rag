@@ -2,7 +2,7 @@ import json
 import time
 from pathlib import Path
 
-from fastembed import TextEmbedding
+from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 
 
@@ -188,8 +188,8 @@ def main():
 
     model_start = time.perf_counter()
 
-    embedder = TextEmbedding(
-        model_name=MODEL_NAME
+    embedder = SentenceTransformer(
+        MODEL_NAME
     )
 
     model_load_ms = (
@@ -249,10 +249,10 @@ def main():
 
     print("\nWarming up...")
 
-    list(
-        embedder.embed(
-            ["मैनहट्टन परियोजना क्या थी?"]
-        )
+    embedder.encode(
+        "मैनहट्टन परियोजना क्या थी?",
+        convert_to_numpy=True,
+        normalize_embeddings=True
     )
 
     print("Warm-up complete.")
@@ -293,11 +293,11 @@ def main():
 
         start = time.perf_counter()
 
-        vector = list(
-            embedder.embed(
-                [query]
-            )
-        )[0]
+        vector = embedder.encode(
+            query,
+            convert_to_numpy=True,
+            normalize_embeddings=True
+        )
 
         embedding_ms = (
             time.perf_counter()

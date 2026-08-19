@@ -1,7 +1,7 @@
 import time
 import re
 
-from fastembed import TextEmbedding
+from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 
 from app.answer_generator import generate_extractive_answer
@@ -212,8 +212,8 @@ class RAGEngine:
             "Loading embedding model..."
         )
 
-        self.embedder = TextEmbedding(
-            model_name=MODEL_NAME
+        self.embedder = SentenceTransformer(
+            MODEL_NAME
         )
 
         print(
@@ -270,11 +270,11 @@ class RAGEngine:
 
         start = time.perf_counter()
 
-        query_vector = list(
-            self.embedder.embed(
-                [query]
-            )
-        )[0]
+        query_vector = self.embedder.encode(
+            query,
+            convert_to_numpy=True,
+            normalize_embeddings=True
+        )
 
         embedding_ms = (
             time.perf_counter()

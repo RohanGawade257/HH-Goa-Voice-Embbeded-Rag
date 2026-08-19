@@ -4,7 +4,7 @@ import time
 import statistics
 from pathlib import Path
 
-from fastembed import TextEmbedding
+from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 
 
@@ -212,8 +212,8 @@ def main():
     print()
     print("Loading embedding model...")
 
-    embedder = TextEmbedding(
-        model_name=MODEL_NAME
+    embedder = SentenceTransformer(
+        MODEL_NAME
     )
 
     print("Embedding model loaded.")
@@ -269,11 +269,11 @@ def main():
 
         start = time.perf_counter()
 
-        query_vector = list(
-            embedder.embed(
-                [query]
-            )
-        )[0]
+        query_vector = embedder.encode(
+            query,
+            convert_to_numpy=True,
+            normalize_embeddings=True
+        )
 
         embedding_ms = (
             time.perf_counter() - start

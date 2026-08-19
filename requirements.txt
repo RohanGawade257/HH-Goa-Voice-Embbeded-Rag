@@ -5,8 +5,8 @@
 # CORE RAG DEPENDENCIES
 # ============================================================
 
-# Embedding model inference (ONNX-based, no PyTorch needed)
-fastembed>=0.5.1
+# Embedding model inference
+sentence-transformers>=2.7.0
 
 # Vector database
 qdrant-client>=1.9.0

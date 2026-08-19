@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
-from fastembed import TextEmbedding
+from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient, models
 
 
@@ -23,7 +23,7 @@ BATCH_SIZE = 128
 
 QDRANT_PATH = "data/qdrant"
 
-# E5 = 384 dimensions
+# paraphrase-multilingual-MiniLM-L12-v2 = 384 dimensions
 VECTOR_SIZE = 384
 
 
@@ -81,8 +81,8 @@ def main():
 
     model_start = time.perf_counter()
 
-    embedding_model = TextEmbedding(
-        model_name=EMBEDDING_MODEL
+    embedding_model = SentenceTransformer(
+        EMBEDDING_MODEL
     )
 
     model_load_time = (
@@ -157,22 +157,23 @@ def main():
 
     embedding_start = time.perf_counter()
 
-    embeddings = list(
-        embedding_model.embed(
-            texts,
-            batch_size=BATCH_SIZE
-        )
+    embeddings = embedding_model.encode(
+        texts,
+        batch_size=BATCH_SIZE,
+        convert_to_numpy=True,
+        normalize_embeddings=True,
+        show_progress_bar=True
+    )
+
+    embeddings = np.asarray(
+        embeddings,
+        dtype=np.float32
     )
 
     embedding_time = (
         time.perf_counter()
         - embedding_start
     ) * 1000
-
-    embeddings = np.asarray(
-        embeddings,
-        dtype=np.float32
-    )
 
     print(
         f"Embedding time: "

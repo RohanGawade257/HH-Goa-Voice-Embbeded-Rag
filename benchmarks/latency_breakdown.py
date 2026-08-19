@@ -1,13 +1,13 @@
 import sys, time, statistics
 sys.stdout.reconfigure(encoding="utf-8")
-from fastembed import TextEmbedding
+from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 
 MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 COLLECTION = "hh_goa_rag_hindi"
 QDRANT_PATH = "data/qdrant"
 
-emb = TextEmbedding(model_name=MODEL)
+emb = SentenceTransformer(MODEL)
 client = QdrantClient(path=QDRANT_PATH)
 
 queries = [
@@ -20,7 +20,7 @@ queries = [
 
 # Warmup x10
 for _ in range(10):
-    v = list(emb.embed(["warmup"]))[0]
+    v = emb.encode("warmup", convert_to_numpy=True, normalize_embeddings=True)
     client.query_points(collection_name=COLLECTION, query=v, limit=20, with_payload=False, with_vectors=False)
 
 # Detailed breakdown
@@ -34,7 +34,7 @@ for i in range(N):
 
     t0 = time.perf_counter()
     # Exactly how pipeline.py does it
-    query_vector = list(emb.embed([q]))[0]
+    query_vector = emb.encode(q, convert_to_numpy=True, normalize_embeddings=True)
     t1 = time.perf_counter()
 
     client.query_points(
@@ -56,7 +56,7 @@ def pct(vals, p):
     f = int(k)
     return vals[f] + (k-f)*(vals[min(f+1,len(vals)-1)]-vals[f])
 
-print(f"n={N} queries | fastembed 0.8.0 | onnxruntime 1.20.1")
+print(f"n={N} queries | sentence-transformers | paraphrase-multilingual-MiniLM-L12-v2")
 print()
 print(f"{'stage':<12}{'avg':>8}{'p50':>8}{'p95':>8}{'p99':>8}   (ms)")
 print("-" * 52)
@@ -68,18 +68,13 @@ p95 = pct(total_times, 95)
 print(f"Budget: 200 ms | p95 total: {p95:.2f} ms")
 print("PASS" if p95 <= 200 else "FAIL")
 
-# Also check: what's the numpy array overhead?
+# Check encode overhead without numpy conversion
 import numpy as np
 t0 = time.perf_counter()
 for _ in range(100):
-    v = list(emb.embed(["test"]))[0]
+    v = emb.encode("test", convert_to_numpy=True, normalize_embeddings=True)
 t1 = time.perf_counter()
 
-t2 = time.perf_counter()
-for _ in range(100):
-    vv = np.array(list(emb.embed(["test"]))[0])
-t3 = time.perf_counter()
-
 print()
-print(f"embed() iterator overhead per call: {(t1-t0)*10:.2f} ms avg")
+print(f"encode() avg per call: {(t1-t0)*10:.2f} ms avg")
 client.close()
