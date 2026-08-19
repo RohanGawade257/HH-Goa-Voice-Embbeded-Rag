@@ -4,7 +4,7 @@ import re
 from fastembed import TextEmbedding
 from qdrant_client import QdrantClient
 
-from answer_generator import generate_extractive_answer
+from app.answer_generator import generate_extractive_answer
 
 
 # ============================================================

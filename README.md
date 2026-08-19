@@ -17,17 +17,17 @@ Ask a question in Hindi (by voice or text). The system retrieves semantically re
 ```
 Audio (Hindi)
       ↓
-Sarvam STT          [stt.py]
+Sarvam STT          [app/voice/stt.py]
       ↓
-Query embedding     [pipeline.py — fastembed MiniLM-L12-v2, 384-dim]
+Query embedding     [app/pipeline.py — fastembed MiniLM-L12-v2, 384-dim]
       ↓
 Qdrant Top-20       [local SQLite, cosine similarity]
       ↓
 Lexical Reranker     [vector×0.70 + overlap×0.20 + phrase×0.10 → Top-3]
       ↓
-Extractive answer   [answer_generator.py — sentence selection + guardrails]
+Extractive answer   [app/answer_generator.py — sentence selection + guardrails]
       ↓
-FastAPI response    [api.py — /query /voice /health]
+FastAPI response    [app/api.py — /query /voice /health]
       ↓
 Next.js frontend    [frontend/ — React + Tailwind v4 + Motion]
 ```
@@ -53,7 +53,7 @@ cp .env.example .env
 # Edit .env and set SARVAM_API_KEY if you have one
 
 # Start the API server
-uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.api:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 The server starts at **http://localhost:8000**. The Qdrant index loads once at startup (~2 s).
@@ -149,7 +149,7 @@ Total P50:                     38 ms
 Run the benchmark yourself:
 
 ```bash
-python benchmark.py
+python -m benchmarks.benchmark
 ```
 
 ---
@@ -158,17 +158,39 @@ python benchmark.py
 
 ```
 HH-Goa-Rag/
-├── api.py                      FastAPI — /health /query /voice
-├── pipeline.py                 RAG core — embedding + Qdrant + reranking  [FROZEN]
-├── answer_generator.py         Extractive answer + guardrails              [FROZEN]
-├── stt.py                      Sarvam STT integration + mock fallback
-├── benchmark.py                Official benchmark (p50/p95/p99/p100)
-├── chunk_data.py               VAST semantic chunking (4 strategies)
-├── process_data.py             Data cleaning and passage extraction
-├── requirements.txt
-├── .env.example                Environment variable template
-├── STAGE1_BASELINE.md          Verified Phase 1+2 benchmark results
-├── EXPERIMENT_LOG.md           EXP-001 (guardrail fix), EXP-002 (API), EXP-003 (dedup REVERTED)
+│
+├── app/                        Production application package
+│   ├── pipeline.py             RAG core — embedding + Qdrant + reranking  [FROZEN]
+│   ├── api.py                  FastAPI — /health /query /voice
+│   ├── answer_generator.py     Extractive answer + guardrails              [FROZEN]
+│   ├── retrieval/
+│   │   ├── retrieve.py         Standalone retrieval benchmark utility
+│   │   └── query_embedding.py  Query embedding utility (sentence-transformers)
+│   ├── voice/
+│   │   └── stt.py              Sarvam STT integration + mock fallback
+│   └── generation/             (placeholder for future LLM integration)
+│
+├── ingestion/                  One-time data preparation scripts
+│   ├── process_data.py         Raw data → passages
+│   ├── chunk_data.py           Passages → chunks (VAST semantic chunking)
+│   ├── embed_data.py           Chunks → Qdrant vectors
+│   ├── validate_chunks.py      Chunk quality validation
+│   ├── inspect_lengths.py      Passage length analysis
+│   └── sample.py               Extract sample from Parquet dataset
+│
+├── benchmarks/                 Performance measurement
+│   ├── benchmark.py            Official benchmark (p50/p95/p99/p100)
+│   ├── benchmark_pipeline.py   Full post-STT pipeline benchmark
+│   ├── rerank_benchmark.py     Reranking-specific benchmark
+│   └── latency_breakdown.py    Low-level embedding + search latency
+│
+├── tests/
+│   ├── test_api.py             FastAPI endpoint tests
+│   └── test_imports.py         Import smoke tests
+│
+├── archive/                    Historical experiments (not active)
+│   ├── old_experiments/        Step 9–20 calibration and diagnostic scripts
+│   └── old_scripts/            Ad-hoc debug/analysis scripts
 │
 ├── data/
 │   ├── hindi_sample_1000.jsonl     Primary dataset (1,000 records)
@@ -177,21 +199,24 @@ HH-Goa-Rag/
 │   │   └── chunks_1000.jsonl       10,302 chunks
 │   └── qdrant/                     Local Qdrant SQLite vector store
 │
+├── requirements.txt
+├── .env.example                    Environment variable template
+├── STAGE1_BASELINE.md              Verified Phase 1+2 benchmark results
+├── EXPERIMENT_LOG.md               Experiment history log
+│
 └── frontend/                   Next.js 16 + React 19 + Tailwind v4 UI
     ├── app/
-    │   ├── globals.css             Design system tokens + utilities
-    │   ├── layout.tsx              Root layout
-    │   └── page.tsx                Main page
+    │   ├── globals.css
+    │   ├── layout.tsx
+    │   └── page.tsx
     ├── components/
-    │   ├── Navbar.tsx              Floating Dynamic Island pill
-    │   ├── Hero.tsx                Asymmetric split hero
-    │   ├── QuerySection.tsx        Text + voice query interface
-    │   ├── AnswerCard.tsx          Answer + sources + latency breakdown
-    │   ├── HowItWorks.tsx          Pipeline explainer (6 steps)
-    │   ├── BenchmarkSection.tsx    Metrics grid + stage bar chart
-    │   └── Footer.tsx              Pipeline summary + frozen baseline
+    │   ├── Navbar.tsx, Hero.tsx, QuerySection.tsx
+    │   ├── AnswerCard.tsx, BenchmarkSection.tsx
+    │   ├── HowItWorks.tsx, Footer.tsx
+    │   └── ui/button.tsx
     └── lib/
-        └── api.ts                  Typed API client
+        ├── api.ts              Typed API client
+        └── utils.ts
 ```
 
 ---
@@ -203,9 +228,9 @@ The Qdrant index at `data/qdrant/` is already built. Do **not** re-index unneces
 If you need to rebuild (e.g., after changing chunk strategy):
 
 ```bash
-python process_data.py        # re-generate passages
-python chunk_data.py          # re-generate chunks
-python index_qdrant.py        # re-build vector index
+python -m ingestion.process_data    # re-generate passages
+python -m ingestion.chunk_data      # re-generate chunks
+python -m ingestion.embed_data      # re-build vector index
 ```
 
 ---

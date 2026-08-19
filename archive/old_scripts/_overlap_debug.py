@@ -6,7 +6,9 @@ import re
 import sys
 sys.stdout.reconfigure(encoding="utf-8")
 
-from pipeline import RAGEngine
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+from app.pipeline import RAGEngine
 
 engine = RAGEngine()
 

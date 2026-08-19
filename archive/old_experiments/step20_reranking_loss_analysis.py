@@ -18,8 +18,10 @@ import time
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from pipeline import RAGEngine, rerank, lexical_overlap, phrase_score
-from pipeline import (
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+from app.pipeline import RAGEngine, rerank, lexical_overlap, phrase_score
+from app.pipeline import (
     VECTOR_WEIGHT, LEXICAL_WEIGHT, PHRASE_WEIGHT,
     TOP_K_RETRIEVAL, TOP_K_FINAL, COLLECTION_NAME
 )

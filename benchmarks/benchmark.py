@@ -13,7 +13,7 @@ import statistics
 import sys
 from pathlib import Path
 
-from pipeline import RAGEngine
+from app.pipeline import RAGEngine
 
 # ============================================================
 # BUDGET (matches official format)

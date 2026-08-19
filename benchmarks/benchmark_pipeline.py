@@ -3,7 +3,7 @@ import time
 import statistics
 from pathlib import Path
 
-from pipeline import RAGEngine
+from app.pipeline import RAGEngine
 
 
 # ============================================================

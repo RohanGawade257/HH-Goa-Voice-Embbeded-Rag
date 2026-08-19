@@ -26,8 +26,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from typing import Optional
 
-from pipeline import RAGEngine
-from stt import transcribe_audio, stt_status
+from app.pipeline import RAGEngine
+from app.voice.stt import transcribe_audio, stt_status
 
 
 # ============================================================

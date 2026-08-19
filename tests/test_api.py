@@ -5,7 +5,7 @@ import sys
 sys.stdout.reconfigure(encoding="utf-8")
 
 from fastapi.testclient import TestClient
-from api import app
+from app.api import app
 
 client = TestClient(app)
 

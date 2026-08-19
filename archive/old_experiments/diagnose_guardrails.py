@@ -2,7 +2,9 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from pipeline import RAGEngine
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+from app.pipeline import RAGEngine
 
 
 QUERY_FILE = Path(

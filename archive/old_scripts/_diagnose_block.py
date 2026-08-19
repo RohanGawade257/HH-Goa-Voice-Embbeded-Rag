@@ -10,7 +10,9 @@ from pathlib import Path
 # Use UTF-8 output
 sys.stdout.reconfigure(encoding="utf-8")
 
-from pipeline import RAGEngine
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+from app.pipeline import RAGEngine
 
 engine = RAGEngine()
 
