@@ -1,0 +1,152 @@
+{
+  "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "dimension": 384,
+  "batch_size": 128,
+  "collection": "hh_goa_rag_multilingual",
+  "qdrant_path": "data/qdrant",
+  "total_chunks": 6046,
+  "vectors_generated": 6046,
+  "vectors_uploaded": 6046,
+  "language_counts": {
+    "as": 451,
+    "bn": 474,
+    "gu": 485,
+    "hi": 490,
+    "kn": 453,
+    "ml": 445,
+    "mr": 448,
+    "ne": 490,
+    "or": 459,
+    "pa": 493,
+    "sa": 431,
+    "ta": 451,
+    "ur": 476
+  },
+  "timing": {
+    "model_load_seconds": 220.379221900017,
+    "embedding_seconds": 72.18594510000548,
+    "avg_document_embedding_ms": 11.93945502811867,
+    "upload_seconds": 68.85597550001694
+  },
+  "sample_vector_norms": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "collection_validation": {
+    "collection_exists": true,
+    "vector_dimension": 384,
+    "distance": "Cosine",
+    "point_count": 6046,
+    "payload_contains_language": true,
+    "payload_contains_text": true,
+    "sample_vector_dimension": 384,
+    "sample_vector_norm": 1.0
+  },
+  "representative_vectors": [
+    {
+      "language": "hi",
+      "chunk_id": "hi_596134_0_9d367f6242_intact_0_9d367f6242",
+      "vector_dimension": 384,
+      "vector_norm": 1.0
+    },
+    {
+      "language": "mr",
+      "chunk_id": "mr_627573_0_8308b3e77c_intact_0_8308b3e77c",
+      "vector_dimension": 384,
+      "vector_norm": 1.0
+    },
+    {
+      "language": "ta",
+      "chunk_id": "ta_707885_0_7f39bdf42e_intact_0_7f39bdf42e",
+      "vector_dimension": 384,
+      "vector_norm": 1.0
+    },
+    {
+      "language": "bn",
+      "chunk_id": "bn_735907_0_6c2e4c2b33_intact_0_6c2e4c2b33",
+      "vector_dimension": 384,
+      "vector_norm": 1.0
+    },
+    {
+      "language": "ur",
+      "chunk_id": "ur_688363_0_647b704c75_intact_0_647b704c75",
+      "vector_dimension": 384,
+      "vector_norm": 1.0
+    }
+  ],
+  "sanity_query": "मैनहट्टन परियोजना की सफलता का तुरंत क्या प्रभाव पड़ा?",
+  "sanity_query_norm": 1.0,
+  "sanity_results": [
+    {
+      "rank": 1,
+      "score": 0.6478395831056099,
+      "language": "hi",
+      "chunk_id": "hi_1185869_0_d1b50c44f4_intact_0_d1b50c44f4",
+      "preview": "मैनहट्टन परियोजना की सफलता का तत्काल प्रभाव परमाणु शोधकर्ताओं और इंजीनियरों की प्रभावशाली उपलब्धि पर एकमात्र बादल था जो उनकी सफलता का वास्तव में अर्थ था; लाखों "
+    },
+    {
+      "rank": 2,
+      "score": 0.6078343307866185,
+      "language": "ur",
+      "chunk_id": "ur_1185869_0_4085594aa7_intact_0_4085594aa7",
+      "preview": "مین ہیٹن پروجیکٹ کی کامیابی کا فوری اثر واحد ایسا بادل تھا جو ایٹمی محققین اور انجینئروں کی متاثر کن کامیابی پر لٹکا ہوا تھا جو ان کی کامیابی کا حقیقی مطلب تھا۔"
+    },
+    {
+      "rank": 3,
+      "score": 0.583651842194983,
+      "language": "gu",
+      "chunk_id": "gu_1185869_0_434f8e0e5f_intact_0_434f8e0e5f",
+      "preview": "મેનહટન પ્રોજેક્ટની સફળતાની તાત્કાલિક અસર એ એકમાત્ર વાદળ હતું જે પરમાણુ સંશોધકો અને ઇજનેરોની પ્રભાવશાળી સિદ્ધિ પર લટકી રહ્યું હતું; લાખો નિર્દોષ લોકોના જીવ સંપૂર"
+    },
+    {
+      "rank": 4,
+      "score": 0.5159252451254516,
+      "language": "mr",
+      "chunk_id": "mr_1185869_0_c948da9ef7_intact_0_c948da9ef7",
+      "preview": "मॅनहॅटन प्रकल्पाच्या यशाचा तात्काळ परिणाम हा अणुसंशोधक आणि अभियंत्यांच्या प्रभावी कामगिरीवरच एकमेव ढग होता ज्याचा त्यांच्या यशाचा खरा अर्थ होता; लाखो निर्दोष लो"
+    },
+    {
+      "rank": 5,
+      "score": 0.5058766536534528,
+      "language": "ne",
+      "chunk_id": "ne_1185869_0_2a144e7ea3_intact_0_2a144e7ea3",
+      "preview": "म्यानहट्टन परियोजनाको सफलताको तत्काल प्रभाव एकमात्र त्यो प्रभाव थियो जो आणविक अनुसन्धानकर्ता र इन्जिनियरहरूको प्रभावशाली उपलब्धिको छायामा झुन्डिएको थियो; लाखौँ "
+    },
+    {
+      "rank": 6,
+      "score": 0.46572539665324086,
+      "language": "pa",
+      "chunk_id": "pa_1173736_0_236a3b9144_intact_0_236a3b9144",
+      "preview": "ਬਿਲਬੋਰਡ ਇੱਕ ਵੱਡੀ ਬਾਹਰੀ ਇਸ਼ਤਿਹਾਰਬਾਜ਼ੀ ਦੀ ਬਣਤਰ ਹੈ, ਜੋ ਆਮ ਤੌਰ 'ਤੇ ਵਿਅਸਤ ਸੜਕਾਂ ਦੇ ਨਾਲ-ਨਾਲ ਉੱਚ-ਟ੍ਰੈਫਿਕ ਵਾਲੇ ਖੇਤਰਾਂ ਵਿੱਚ ਪਾਈ ਜਾਂਦੀ ਹੈ।"
+    },
+    {
+      "rank": 7,
+      "score": 0.42722803209116833,
+      "language": "ur",
+      "chunk_id": "ur_525651_0_50c67b321e_intact_0_50c67b321e",
+      "preview": "وہ لمحہ یا حصہ جب عمل عروج پر جانے لگتا ہے۔"
+    },
+    {
+      "rank": 8,
+      "score": 0.4240604426285727,
+      "language": "as",
+      "chunk_id": "as_175208_0_bbc60d87aa_intact_0_bbc60d87aa",
+      "preview": "ডাবল-হেটিং হৈছে ইউৰোস্পীকৰ এটা নতুন অংশ যিটো দুটা ভূমিকা পালন কৰা এজন ব্যক্তি বা প্ৰতিষ্ঠানক বৰ্ণনা কৰিবলৈ ব্যৱহাৰ কৰা হয়।"
+    },
+    {
+      "rank": 9,
+      "score": 0.4172201389952497,
+      "language": "as",
+      "chunk_id": "as_458568_0_6dfb866e6f_intact_0_6dfb866e6f",
+      "preview": "এই নিউ অৰলিন্সত আৰভাৰটাউন অৱস্থিত।"
+    },
+    {
+      "rank": 10,
+      "score": 0.4143986164599953,
+      "language": "or",
+      "chunk_id": "or_1183771_0_c43e02ae65_intact_0_c43e02ae65",
+      "preview": "ସାଂସ୍କୃତିକ ଅନ୍ତର୍ନିହିତତା କହିଲେ \"ଅର୍ଥନୈତିକ ରଣନୀତି ଏବଂ ଲକ୍ଷ୍ୟ ଗଠନରେ ସାମୂହିକ ବୋଝାପଡ଼ାର ଭୂମିକା\"କୁ ବୁଝାଏ।"
+    }
+  ]
+}

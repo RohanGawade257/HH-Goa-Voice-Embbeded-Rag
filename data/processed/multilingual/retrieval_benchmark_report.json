@@ -1,0 +1,65 @@
+{
+  "collection": "hh_goa_rag_multilingual",
+  "qdrant_path": "data/qdrant",
+  "chunks": 6046,
+  "chunk_counts_by_language": {
+    "as": 451,
+    "bn": 474,
+    "gu": 485,
+    "hi": 490,
+    "kn": 453,
+    "ml": 445,
+    "mr": 448,
+    "ne": 490,
+    "or": 459,
+    "pa": 493,
+    "sa": 431,
+    "ta": 451,
+    "ur": 476
+  },
+  "queries": 500,
+  "query_counts_by_language": {
+    "as": 39,
+    "bn": 39,
+    "gu": 39,
+    "hi": 39,
+    "kn": 39,
+    "ml": 39,
+    "mr": 38,
+    "ne": 38,
+    "or": 38,
+    "pa": 38,
+    "sa": 38,
+    "ta": 38,
+    "ur": 38
+  },
+  "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "vector_size": 384,
+  "top_k_retrieval": 20,
+  "top_k_final": 3,
+  "model_load_ms": 1708.93,
+  "embedding": {
+    "avg_ms": 21.16,
+    "p50_ms": 20.09,
+    "p95_ms": 30.79,
+    "p100_ms": 57.93
+  },
+  "qdrant": {
+    "avg_ms": 13.66,
+    "p50_ms": 13.64,
+    "p95_ms": 14.9,
+    "p100_ms": 21.28
+  },
+  "rerank": {
+    "avg_ms": 1.03,
+    "p50_ms": 0.88,
+    "p95_ms": 1.57,
+    "p100_ms": 45.03
+  },
+  "total_retrieval": {
+    "avg_ms": 35.85,
+    "p50_ms": 34.79,
+    "p95_ms": 45.68,
+    "p100_ms": 116.74
+  }
+}
