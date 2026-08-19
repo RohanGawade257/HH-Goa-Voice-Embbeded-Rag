@@ -1,0 +1,80 @@
+{
+  "collection": "hh_goa_rag_multilingual",
+  "answer_backend": "qwen_api",
+  "llm_provider": "huggingface",
+  "llm_model": "Qwen/Qwen3-0.6B",
+  "max_new_tokens": 64,
+  "llm_timeout_seconds": 5.0,
+  "queries": 13,
+  "warmup": 0,
+  "query_counts_by_language": {
+    "as": 1,
+    "bn": 1,
+    "gu": 1,
+    "hi": 1,
+    "kn": 1,
+    "ml": 1,
+    "mr": 1,
+    "ne": 1,
+    "or": 1,
+    "pa": 1,
+    "sa": 1,
+    "ta": 1,
+    "ur": 1
+  },
+  "stage_stats": {
+    "embedding": {
+      "avg_ms": 38.53,
+      "p50_ms": 40.15,
+      "p95_ms": 58.41,
+      "p99_ms": 59.19,
+      "p100_ms": 59.39
+    },
+    "qdrant": {
+      "avg_ms": 13.65,
+      "p50_ms": 12.58,
+      "p95_ms": 19.37,
+      "p99_ms": 20.83,
+      "p100_ms": 21.19
+    },
+    "rerank": {
+      "avg_ms": 0.29,
+      "p50_ms": 0.26,
+      "p95_ms": 0.45,
+      "p99_ms": 0.46,
+      "p100_ms": 0.46
+    },
+    "compression": {
+      "avg_ms": 0.13,
+      "p50_ms": 0.11,
+      "p95_ms": 0.21,
+      "p99_ms": 0.22,
+      "p100_ms": 0.22
+    },
+    "llm": {
+      "avg_ms": 355.6,
+      "p50_ms": 331.9,
+      "p95_ms": 551.39,
+      "p99_ms": 757.03,
+      "p100_ms": 808.44
+    },
+    "total": {
+      "avg_ms": 408.29,
+      "p50_ms": 394.83,
+      "p95_ms": 590.15,
+      "p99_ms": 804.96,
+      "p100_ms": 858.66
+    }
+  },
+  "recall": {
+    "recall_at_1": 23.08,
+    "recall_at_5": 38.46,
+    "recall_at_10": 38.46
+  },
+  "blocked_reasons": {
+    "qwen_api_error": 13
+  },
+  "latency_budget_ms": 200,
+  "budget_pass": false,
+  "live_llm_measured": true
+}
