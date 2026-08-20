@@ -16,6 +16,7 @@ from qdrant_client import QdrantClient
 
 from app.answer_generator import generate_extractive_answer
 from app.context_compressor import compress_context
+from app.generation.gemini import GeminiAnswerGenerator
 from app.generation.llm import QwenAnswerGenerator
 
 
@@ -383,21 +384,27 @@ class RAGEngine:
             MODEL_NAME
         )
 
-        self.answer_generator = QwenAnswerGenerator()
-
-        if ANSWER_BACKEND in {"qwen", "qwen_api"}:
-
+        if ANSWER_BACKEND == "gemini":
+            self.answer_generator = GeminiAnswerGenerator()
             if self.answer_generator.available:
-
                 print(
-                    f"Qwen API client ready in {self.answer_generator.load_ms:.0f} ms"
+                    f"Gemini API client ready in {self.answer_generator.load_ms:.0f} ms"
                 )
-
             else:
-
                 print(
-                    f"Qwen unavailable: {self.answer_generator.load_error}"
+                    f"Gemini unavailable: {self.answer_generator.load_error}"
                 )
+        else:
+            self.answer_generator = QwenAnswerGenerator()
+            if ANSWER_BACKEND in {"qwen", "qwen_api"}:
+                if self.answer_generator.available:
+                    print(
+                        f"Qwen API client ready in {self.answer_generator.load_ms:.0f} ms"
+                    )
+                else:
+                    print(
+                        f"Qwen unavailable: {self.answer_generator.load_error}"
+                    )
 
         print(
             "Opening Qdrant..."
@@ -658,7 +665,7 @@ class RAGEngine:
 
         answer_start = time.perf_counter()
 
-        if ANSWER_BACKEND in {"qwen", "qwen_api"}:
+        if ANSWER_BACKEND in {"gemini", "qwen", "qwen_api"}:
 
             language_code = normalize_language_code(
                 language
@@ -725,7 +732,7 @@ class RAGEngine:
 
         llm_ms = (
             answer_result.get("latency_ms", answer_ms)
-            if ANSWER_BACKEND in {"qwen", "qwen_api"}
+            if ANSWER_BACKEND in {"gemini", "qwen", "qwen_api"}
             else 0.0
         )
         answer_metadata = {

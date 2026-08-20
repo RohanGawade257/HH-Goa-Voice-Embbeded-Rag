@@ -495,3 +495,55 @@ Production end-to-end benchmark: ⏳ Not finished
 
 After STT the whole Pipeline must get run within 200ms
 it is gonna get deployed so not local models
+
+
+
+
+
+
+
+
+HH GOA RAG — GEMINI LLM LATENCY BENCHMARK
+============================================================
+Provider         : gemini
+Model            : gemini-2.5-flash-lite
+Thinking budget  : 0  (0 = non-thinking)
+Max output tokens: 30
+Temperature      : 0.0
+Warmup           : 5
+Measured requests: 30
+
+------------------------------------------------------------
+REQUEST RESULTS
+------------------------------------------------------------
+SUCCESS   : 5
+HTTP_ERROR: 25
+TIMEOUT   : 0
+EXCEPTION : 0
+SUCCESS RATE: 16.7%
+
+------------------------------------------------------------
+TTFT  (time-to-first-token, successful requests only)
+------------------------------------------------------------
+P50 : 730 ms
+P95 : 982 ms
+P99 : 1014 ms
+P100: 1023 ms
+Avg : 798 ms
+
+------------------------------------------------------------
+TOTAL LLM GENERATION TIME  (successful requests only)
+------------------------------------------------------------
+P50 : 742 ms
+P95 : 982 ms
+P99 : 1015 ms
+P100: 1023 ms
+Avg : 801 ms
+
+------------------------------------------------------------
+TARGET  (LLM generation P95 contribution to post-STT budget)
+------------------------------------------------------------
+POST-STT P95 BUDGET: <= 200 ms  (full pipeline)
+LLM TOTAL P95      : 982 ms
+STATUS             : INCONCLUSIVE
+Report             : data\processed\multilingual\gemini_llm_benchmark_report.json
