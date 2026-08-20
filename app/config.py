@@ -69,8 +69,9 @@ LLM_CHAT_COMPLETIONS_URL = os.getenv(
 # Backward-compatible aliases for existing Hugging Face environment files.
 HF_API_KEY = LLM_API_KEY
 HF_CHAT_COMPLETIONS_URL = LLM_CHAT_COMPLETIONS_URL
-# Qwen model kept for reference / fallback; Gemini is now the active backend.
-QWEN_MODEL = os.getenv("QWEN_MODEL", "Qwen/Qwen2.5-0.5B-Instruct")
+# Phase 1 benchmark model: Qwen/Qwen3-0.6B via Hugging Face OpenAI-compatible API.
+# Override with QWEN_MODEL env var.
+QWEN_MODEL = os.getenv("QWEN_MODEL", "Qwen/Qwen3-0.6B")
 MAX_NEW_TOKENS = get_int("MAX_NEW_TOKENS", 64)
 LLM_TIMEOUT_SECONDS = get_float("LLM_TIMEOUT_SECONDS", 10.0)
 LLM_TEMPERATURE = get_float("LLM_TEMPERATURE", 0.0)

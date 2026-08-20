@@ -1,0 +1,66 @@
+{
+  "benchmark": "retrieval_quality",
+  "phase": "3A",
+  "warmup": 3,
+  "queries_per_lang": 2,
+  "total_queries": 26,
+  "languages": [
+    "as",
+    "bn",
+    "gu",
+    "hi",
+    "kn",
+    "ml",
+    "mr",
+    "ne",
+    "or",
+    "pa",
+    "sa",
+    "ta",
+    "ur"
+  ],
+  "k_values_tested": [
+    10,
+    20,
+    30
+  ],
+  "results_by_k": {
+    "10": {
+      "recall_at_3": 0.4231,
+      "recall_at_k": 0.4615,
+      "time_to_direct_p50": 43.9,
+      "time_to_direct_p95": 57.43,
+      "embedding_p50": 30.31,
+      "qdrant_p50": 13.38
+    },
+    "20": {
+      "recall_at_3": 0.4231,
+      "recall_at_k": 0.4615,
+      "time_to_direct_p50": 28.51,
+      "time_to_direct_p95": 34.06,
+      "embedding_p50": 15.04,
+      "qdrant_p50": 12.12
+    },
+    "30": {
+      "recall_at_3": 0.4231,
+      "recall_at_k": 0.4615,
+      "time_to_direct_p50": 26.71,
+      "time_to_direct_p95": 30.06,
+      "embedding_p50": 13.65,
+      "qdrant_p50": 12.32
+    }
+  },
+  "language_affinity_ab": {
+    "recall_at_3": 0.4231,
+    "recall_at_3_delta_vs_k10_baseline": -0.0,
+    "time_to_direct_p50": 24.32,
+    "time_to_direct_p95": 30.64
+  },
+  "recommendation": {
+    "top_k": 10,
+    "top_k_changed": false,
+    "adopt_language_affinity": false,
+    "rationale": "TOP_K=10 chosen: recall gain ≥2pp and latency cost ≤10ms. Language affinity not adopted: delta=-0.0%."
+  },
+  "historical_note": "Hindi extractive baseline P50≈38ms was measured on the old hindi-only Qdrant collection with a different pipeline. Do NOT cite as current performance."
+}

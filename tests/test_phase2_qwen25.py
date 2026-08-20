@@ -1,7 +1,7 @@
-"""Phase 2 unit tests — Qwen2.5-0.5B-Instruct model replacement.
+"""Phase 1/2 unit tests — Qwen API benchmark infrastructure.
 
 Tests cover:
-  1.  Default model is Qwen2.5-0.5B-Instruct
+  1.  Default model is Qwen/Qwen3-0.6B (Phase 1)
   2.  Model name flows correctly into the API payload
   3.  System prompt enforces answer-only / no-reasoning behaviour
   4.  max_tokens override flows into the API payload
@@ -33,7 +33,8 @@ import httpx
 # Inject dummy credentials so QwenAnswerGenerator.available == True
 os.environ["ANSWER_BACKEND"] = "qwen_api"
 os.environ["LLM_API_KEY"] = "unit-test-key"
-os.environ["QWEN_MODEL"] = "Qwen/Qwen2.5-0.5B-Instruct"
+# Phase 1: default model is Qwen/Qwen3-0.6B
+os.environ.setdefault("QWEN_MODEL", "Qwen/Qwen3-0.6B")
 
 from app.generation.llm import QwenAnswerGenerator, missing_context_answer  # noqa: E402
 from benchmarks.benchmark_qwen_api_manual import (  # noqa: E402
@@ -137,10 +138,10 @@ def make_generator(handler) -> QwenAnswerGenerator:
 
 class ModelConfigurationTests(unittest.TestCase):
 
-    def test_default_model_is_qwen25_instruct(self):
+    def test_default_model_is_qwen3(self):
         gen = QwenAnswerGenerator()
         gen.close()
-        self.assertEqual(gen.model_name, "Qwen/Qwen2.5-0.5B-Instruct")
+        self.assertEqual(gen.model_name, "Qwen/Qwen3-0.6B")
 
     def test_model_name_sent_in_api_payload(self):
         seen = {}
@@ -155,7 +156,7 @@ class ModelConfigurationTests(unittest.TestCase):
         finally:
             gen.close()
 
-        self.assertEqual(seen["payload"]["model"], "Qwen/Qwen2.5-0.5B-Instruct")
+        self.assertEqual(seen["payload"]["model"], "Qwen/Qwen3-0.6B")
 
 
 # ===========================================================================

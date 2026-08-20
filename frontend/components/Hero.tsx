@@ -5,16 +5,44 @@ import { ArrowDown } from "lucide-react";
 
 interface HeroProps {
   onQueryClick: () => void;
+  onExampleSelect?: (query: string, language: string) => void;
 }
 
+// Multilingual example queries — 5 different languages
 const EXAMPLE_QUERIES = [
-  "मैनहट्टन परियोजना क्या थी?",
-  "डीएनए की संरचना कैसी है?",
-  "सौर ऊर्जा कैसे काम करती है?",
-  "प्रकाश की गति कितनी है?",
+  {
+    query: "मैनहट्टन परियोजना क्या थी?",
+    language: "hi-IN",
+    label: "Hindi",
+  },
+  {
+    query: "ম্যানহাটন প্রকল্পের সাফল্যের তাৎক্ষণিক প্রভাব কী ছিল?",
+    language: "bn-IN",
+    label: "Bengali",
+  },
+  {
+    query: "மன்ஹாட்டன் திட்டத்தின் வெற்றியின் உடனடி விளைவு என்ன?",
+    language: "ta-IN",
+    label: "Tamil",
+  },
+  {
+    query: "मॅनहॅटन प्रकल्पाच्या यशाचा तात्काळ काय परिणाम झाला?",
+    language: "mr-IN",
+    label: "Marathi",
+  },
+  {
+    query: "ਮੈਨਹੈਟਨ ਪ੍ਰੋਜੈਕਟ ਦੀ ਸਫਲਤਾ ਦਾ ਤੁਰੰਤ ਪ੍ਰਭਾਵ ਕੀ ਸੀ?",
+    language: "pa-IN",
+    label: "Punjabi",
+  },
 ];
 
-export default function Hero({ onQueryClick }: HeroProps) {
+export default function Hero({ onQueryClick, onExampleSelect }: HeroProps) {
+  const handleExample = (q: typeof EXAMPLE_QUERIES[0]) => {
+    onExampleSelect?.(q.query, q.language);
+    onQueryClick();
+  };
+
   return (
     <section
       className="relative min-h-screen flex flex-col overflow-hidden"
@@ -61,7 +89,7 @@ export default function Hero({ onQueryClick }: HeroProps) {
                 className="w-1.5 h-1.5 rounded-full animate-pulse"
                 style={{ background: "var(--accent)" }}
               />
-              Voice · RAG · Hindi AI
+              Voice · RAG · 13 Languages
             </motion.div>
 
             {/* Main heading */}
@@ -72,14 +100,14 @@ export default function Hero({ onQueryClick }: HeroProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
             >
-              Hindi
+              Multilingual
               <br />
               <span style={{ color: "var(--accent)" }}>Retrieval</span>
               <br />
               Intelligence.
             </motion.h1>
 
-            {/* Devanagari subtitle */}
+            {/* Multilingual subtitle */}
             <motion.p
               className="text-devanagari mb-8 font-medium"
               style={{
@@ -91,7 +119,7 @@ export default function Hero({ onQueryClick }: HeroProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.45, duration: 0.5 }}
             >
-              हिंदी में प्रश्न पूछें।
+              अपनी भाषा में प्रश्न पूछें।
               <br />
               ज्ञान-आधारित उत्तर पाएं।
             </motion.p>
@@ -104,16 +132,17 @@ export default function Hero({ onQueryClick }: HeroProps) {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.55, duration: 0.5 }}
             >
-              Ask questions in Hindi. Get grounded answers from the
-              AI4Bharat MSMARCO-XI knowledge base. Powered by semantic
+              Ask questions in 13 Indian languages. Get grounded answers from the
+              AI4Bharat MSMARCO-XI knowledge base. Powered by multilingual semantic
               retrieval with{" "}
               <span style={{ color: "rgba(245,243,238,0.75)" }}>
-                99.7% grounded response rate
+                extractive answers in under 60 ms
               </span>{" "}
-              and{" "}
+              and an{" "}
               <span style={{ color: "var(--accent-light)" }}>
-                &lt;45ms P95 latency.
-              </span>
+                AI-enhanced answer
+              </span>{" "}
+              following shortly after.
             </motion.p>
           </div>
 
@@ -125,9 +154,9 @@ export default function Hero({ onQueryClick }: HeroProps) {
             transition={{ delay: 0.7, duration: 0.5 }}
           >
             {[
-              { value: "79.1%", label: "Recall@3" },
-              { value: "42ms", label: "P95 latency" },
-              { value: "10K+", label: "Chunks indexed" },
+              { value: "13",    label: "Languages" },
+              { value: "57ms",  label: "P95 direct" },
+              { value: "6K+",   label: "Chunks indexed" },
             ].map((stat) => (
               <div key={stat.label}>
                 <div
@@ -180,14 +209,15 @@ export default function Hero({ onQueryClick }: HeroProps) {
               className="font-black mb-3"
               style={{ fontSize: "clamp(1.4rem, 3vw, 2rem)", letterSpacing: "-0.02em" }}
             >
-              Ask anything in Hindi
+              Ask in any of 13 languages
             </h2>
             <p
               className="text-sm mb-6 max-w-xs leading-relaxed"
               style={{ color: "var(--color-ink-muted)" }}
             >
               Type or speak your question. The system retrieves the most
-              relevant passages and returns a grounded answer in under 55ms.
+              relevant passages and returns a grounded answer in under 60 ms,
+              followed by an AI-enhanced answer.
             </p>
 
             {/* Primary CTA */}
@@ -216,28 +246,27 @@ export default function Hero({ onQueryClick }: HeroProps) {
               </p>
               {EXAMPLE_QUERIES.map((q) => (
                 <button
-                  key={q}
-                  onClick={onQueryClick}
-                  className="text-left text-sm py-2 px-3 border-l-2 text-devanagari transition-all duration-150 hover:pl-4"
+                  key={q.language}
+                  onClick={() => handleExample(q)}
+                  className="text-left text-sm py-2 px-3 border-l-2 text-devanagari transition-all duration-150 hover:pl-4 flex items-baseline gap-2"
                   style={{
                     borderColor: "var(--border)",
                     color: "var(--color-ink-secondary)",
                     background: "transparent",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "var(--accent)";
-                    (e.currentTarget as HTMLButtonElement).style.color =
-                      "var(--foreground)";
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--accent)";
+                    (e.currentTarget as HTMLButtonElement).style.color = "var(--foreground)";
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "var(--border)";
-                    (e.currentTarget as HTMLButtonElement).style.color =
-                      "var(--color-ink-secondary)";
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)";
+                    (e.currentTarget as HTMLButtonElement).style.color = "var(--color-ink-secondary)";
                   }}
                 >
-                  {q}
+                  <span className="shrink-0 text-[10px] uppercase tracking-wide opacity-40 w-14">
+                    {q.label}
+                  </span>
+                  <span>{q.query}</span>
                 </button>
               ))}
             </div>

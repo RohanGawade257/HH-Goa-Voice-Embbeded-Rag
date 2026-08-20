@@ -125,6 +125,27 @@ def _transcribe_sarvam(
 # MOCK STT
 # ============================================================
 
+# Representative test queries per BCP-47 language code.
+# These are used when SARVAM_API_KEY is not set so that
+# dev/test runs produce language-appropriate mock transcripts.
+MOCK_TRANSCRIPTS: dict[str, str] = {
+    "hi-IN": "मैनहट्टन परियोजना क्या थी?",
+    "bn-IN": "ম্যানহাটন প্রকল্পের সাফল্যের তাৎক্ষণিক প্রভাব কী ছিল?",
+    "gu-IN": "મેનહટન પ્રોજેક્ટની સફળતાની તાત્કાલિક અસર શું હતી?",
+    "kn-IN": "ಮ್ಯಾನ್\u200cಹ್ಯಾಟನ್ ಯೋಜನೆಯ ಯಶಸ್ಸಿನ ತಕ್ಷಣದ ಪರಿಣಾಮ ಏನು ಆಗಿತ್ತು?",
+    "ml-IN": "മാൻഹാട്ടൻ പദ്ധതിയുടെ വിജയത്തിന്റെ ഉടനടി ആഘാതം എന്തായിരുന്നു?",
+    "mr-IN": "मॅनहॅटन प्रकल्पाच्या यशाचा तात्काळ काय परिणाम झाला?",
+    "od-IN": "ମ୍ୟାନହାଟନ ପ୍ରକଳ୍ପର ସଫଳତାର ତତ୍\u200cକ୍ଷଣାତ ପ୍ରଭାବ କ'ଣ ଥିଲା?",
+    "pa-IN": "ਮੈਨਹੈਟਨ ਪ੍ਰੋਜੈਕਟ ਦੀ ਸਫਲਤਾ ਦਾ ਤੁਰੰਤ ਪ੍ਰਭਾਵ ਕੀ ਸੀ?",
+    "ta-IN": "மன்ஹாட்டன் திட்டத்தின் வெற்றியின் உடனடி விளைவு என்ன?",
+    "te-IN": "మాన్హాటన్ ప్రాజెక్ట్ విజయం యొక్క తక్షణ ప్రభావం ఏమిటి?",
+    "en-IN": "What was the Manhattan Project?",
+}
+
+# Hindi fallback for any language not in MOCK_TRANSCRIPTS
+_MOCK_FALLBACK = MOCK_TRANSCRIPTS["hi-IN"]
+
+
 def _transcribe_mock(
     audio_bytes: bytes,
     language_code: str = DEFAULT_LANGUAGE,
@@ -132,7 +153,8 @@ def _transcribe_mock(
     """
     Mock STT for development/testing when Sarvam API is unavailable.
 
-    Returns a fixed Hindi test query.
+    Returns a language-appropriate test query based on language_code.
+    Falls back to Hindi if the language is not in MOCK_TRANSCRIPTS.
     """
 
     logger.warning(
@@ -140,8 +162,10 @@ def _transcribe_mock(
         "Set SARVAM_API_KEY environment variable for real STT."
     )
 
+    transcript = MOCK_TRANSCRIPTS.get(language_code, _MOCK_FALLBACK)
+
     return {
-        "transcript": "मैनहट्टन परियोजना क्या थी?",
+        "transcript": transcript,
         "language_code": language_code,
         "latency_ms": 0.0,
         "provider": "mock",

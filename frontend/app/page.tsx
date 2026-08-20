@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import QuerySection from "@/components/QuerySection";
@@ -8,11 +9,13 @@ import BenchmarkSection from "@/components/BenchmarkSection";
 import Footer from "@/components/Footer";
 
 export default function HomePage() {
+  const [exampleQuery, setExampleQuery] = useState("");
+  const [exampleLanguage, setExampleLanguage] = useState("");
+
   const scrollToQuery = () => {
     const el = document.getElementById("query");
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
-      // Focus the textarea after scroll
       setTimeout(() => {
         const ta = el.querySelector("textarea");
         ta?.focus();
@@ -20,12 +23,20 @@ export default function HomePage() {
     }
   };
 
+  const handleExampleSelect = (query: string, language: string) => {
+    setExampleQuery(query);
+    setExampleLanguage(language);
+  };
+
   return (
     <>
       <Navbar onQueryClick={scrollToQuery} />
       <main>
-        <Hero onQueryClick={scrollToQuery} />
-        <QuerySection />
+        <Hero onQueryClick={scrollToQuery} onExampleSelect={handleExampleSelect} />
+        <QuerySection
+          defaultQuery={exampleQuery || undefined}
+          defaultLanguage={exampleLanguage || undefined}
+        />
         <HowItWorks />
         <BenchmarkSection />
       </main>

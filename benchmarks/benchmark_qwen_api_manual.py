@@ -1,16 +1,27 @@
 """Auditable live benchmark for the multilingual Qwen API RAG path.
 
-Phase 2: default model is Qwen/Qwen2.5-0.5B-Instruct (concise instruction-
-following, no chain-of-thought).  The benchmark supports a token-limit
-experiment that runs the same pipeline for each of 16/32/48/64 max-tokens and
-records per-config reports plus a final comparison table.
+Phase 1 model: Qwen/Qwen3-0.6B (set via QWEN_MODEL env var or config default).
 
 The benchmark measures the current production pipeline:
 
   embedding -> Qdrant -> rerank -> compression -> remote Qwen API -> answer
 
+REQUEST CLASSIFICATION
+----------------------
+Every request receives exactly one status:
+  SUCCESS    -- valid HTTP response, non-empty answer, timing valid
+  HTTP_ERROR -- non-2xx HTTP response (401, 429, 500, etc.)
+  TIMEOUT    -- httpx.TimeoutException
+  EXCEPTION  -- any other exception
+
 Failed LLM requests are recorded in the raw report but excluded from latency
-percentiles and PASS/FAIL decisions.
+percentiles and PASS/FAIL decisions.  Warmup requests are never included in
+measured statistics.  The benchmark continues after individual request failures
+and never crashes the entire run.
+
+Token-limit experiment (--token-experiment): runs the same pipeline for each
+of 16/32/48/64 max-tokens and records per-config reports plus a comparison
+table.
 """
 
 from __future__ import annotations

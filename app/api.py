@@ -13,7 +13,9 @@ Architecture:
 The RAG core (pipeline.py) is independent of this HTTP layer.
 """
 
+import asyncio
 import io
+import json
 import os
 import time
 import logging
@@ -21,7 +23,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -206,6 +208,32 @@ class VoiceResponse(BaseModel):
 
 
 # ============================================================
+# SSE HELPERS
+# ============================================================
+
+def _sse_event(event: str, data: dict) -> str:
+    """Format a single SSE message."""
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
+def _build_sources(items: list) -> list[dict]:
+    """Convert pipeline source items to serialisable dicts."""
+    return [
+        {
+            "rank": item.get("rank", 0),
+            "chunk_id": item.get("chunk_id"),
+            "passage_id": item.get("passage_id"),
+            "query_id": str(item.get("query_id", "")),
+            "text": item.get("text", ""),
+            "language": item.get("language"),
+            "score": float(item.get("score", 0.0)),
+            "vector_score": float(item.get("vector_score", 0.0)),
+        }
+        for item in items
+    ]
+
+
+# ============================================================
 # GET /health
 # ============================================================
 
@@ -269,6 +297,157 @@ async def health():
             "requires_live_llm_benchmark": ANSWER_BACKEND in {"qwen", "qwen_api"},
         },
     }
+
+
+# ============================================================
+# GET /query/stream  — dual-answer SSE endpoint
+# ============================================================
+
+@app.get("/query/stream")
+async def query_stream(q: str, language: str = "hi-IN"):
+    """
+    Stream the RAG pipeline answer as Server-Sent Events.
+
+    Events emitted (in order):
+        direct_answer  — extractive answer, ready after retrieve+compress (~50–70 ms)
+        llm_answer     — Gemini LLM answer (or error if Gemini unavailable)
+        sources        — retrieved source chunks
+        timing         — full stage latency breakdown
+        done           — stream complete
+
+    The direct_answer is always emitted before llm_answer so the
+    frontend can render immediately without waiting for the LLM.
+    """
+
+    engine = get_engine()
+
+    async def event_generator():
+
+        t0 = time.perf_counter()
+        direct_sent = False
+
+        try:
+            if not q.strip():
+                yield _sse_event("error", {"message": "empty_query"})
+                yield _sse_event("done", {})
+                return
+
+            # --------------------------------------------------
+            # STEP 1 — retrieve + compress  (runs in thread to
+            # avoid blocking the event loop)
+            # --------------------------------------------------
+            try:
+                direct_result, state = await asyncio.to_thread(
+                    engine.process_dual, q, language
+                )
+            except Exception as exc:
+                yield _sse_event("error", {"message": f"pipeline error: {exc}"})
+                yield _sse_event("done", {})
+                return
+
+            time_to_direct_ms = (time.perf_counter() - t0) * 1000
+
+            # --------------------------------------------------
+            # STEP 2 — emit direct (extractive) answer
+            # --------------------------------------------------
+            yield _sse_event("direct_answer", {
+                "answer": direct_result["answer"],
+                "grounded": direct_result["grounded"],
+                "blocked": direct_result["blocked"],
+                "reason": direct_result["reason"],
+                "retrieved_chunks": direct_result["retrieved_chunks"],
+                "time_to_direct_ms": round(time_to_direct_ms, 2),
+            })
+            direct_sent = True  # direct answer is now delivered
+
+            # --------------------------------------------------
+            # STEP 3 — LLM answer  (Gemini via thread)
+            # --------------------------------------------------
+            llm_answer = None
+            llm_error = None
+            llm_ms = 0.0
+
+            if state is not None and engine.answer_generator.available:
+                try:
+                    llm_start = time.perf_counter()
+                    llm_result = await asyncio.to_thread(
+                        engine.answer_generator.generate,
+                        state["query"],
+                        state["language_code"] or "",
+                        state["compression_result"]["context"],
+                    )
+                    llm_ms = (time.perf_counter() - llm_start) * 1000
+                    llm_answer = llm_result.get("answer", "")
+                    llm_grounded = bool(llm_result.get("grounded", False))
+                    llm_blocked = bool(llm_result.get("blocked", False))
+                    llm_reason = llm_result.get("reason", "")
+                except Exception as exc:
+                    llm_error = str(exc)
+            elif state is None:
+                llm_error = "empty_query"
+            else:
+                llm_error = "llm_unavailable"
+
+            time_to_llm_ms = (time.perf_counter() - t0) * 1000
+
+            if llm_error:
+                yield _sse_event("llm_answer", {
+                    "answer": None,
+                    "error": llm_error,
+                    "time_to_llm_ms": round(time_to_llm_ms, 2),
+                })
+            else:
+                yield _sse_event("llm_answer", {
+                    "answer": llm_answer,
+                    "grounded": llm_grounded,
+                    "blocked": llm_blocked,
+                    "reason": llm_reason,
+                    "time_to_llm_ms": round(time_to_llm_ms, 2),
+                })
+
+            # --------------------------------------------------
+            # STEP 4 — sources
+            # --------------------------------------------------
+            yield _sse_event("sources", {
+                "sources": _build_sources(direct_result.get("sources", [])),
+            })
+
+            # --------------------------------------------------
+            # STEP 5 — timing
+            # --------------------------------------------------
+            base_timings = direct_result.get("timings", {})
+            yield _sse_event("timing", {
+                "embedding_ms": base_timings.get("embedding_ms", 0),
+                "qdrant_ms": base_timings.get("qdrant_ms", 0),
+                "rerank_ms": base_timings.get("rerank_ms", 0),
+                "compression_ms": base_timings.get("compression_ms", 0),
+                "llm_ms": round(llm_ms, 2),
+                "time_to_direct_ms": round(time_to_direct_ms, 2),
+                "time_to_llm_ms": round(time_to_llm_ms, 2),
+                "total_ms": round(time_to_llm_ms, 2),
+            })
+
+            yield _sse_event("done", {})
+
+        except Exception as exc:
+            # Top-level guard: catch any unexpected generator exception.
+            # If direct_answer was already sent, the user already has an answer.
+            # Always ensure the stream terminates cleanly.
+            logger.error(f"/query/stream unexpected error: {exc}", exc_info=True)
+            yield _sse_event("error", {
+                "message": f"internal error: {exc}",
+                "direct_delivered": direct_sent,
+            })
+            yield _sse_event("done", {})
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 # ============================================================
@@ -406,10 +585,16 @@ async def voice(
     # STT latency is NOT counted in the <200ms RAG target.
     # --------------------------------------------------------
 
-    stt_result = transcribe_audio(
-        audio_bytes=audio_bytes,
-        language_code=language,
-    )
+    try:
+        stt_result = transcribe_audio(
+            audio_bytes=audio_bytes,
+            language_code=language,
+        )
+    except RuntimeError as stt_exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"STT provider error: {stt_exc}",
+        )
 
     transcript = stt_result.get("transcript", "").strip()
 

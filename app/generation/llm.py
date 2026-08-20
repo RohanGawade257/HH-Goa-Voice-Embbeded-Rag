@@ -61,12 +61,12 @@ def missing_context_answer(language: str) -> str:
 
 
 class QwenAnswerGenerator:
-    """Qwen2.5-0.5B-Instruct answer generator backed by an OpenAI-compatible API.
+    """Answer generator backed by a Hugging Face OpenAI-compatible API.
 
-    Qwen2.5-0.5B-Instruct is a pure instruction-following model with no
-    chain-of-thought / thinking capability.  Non-thinking behaviour is enforced
-    through model selection + a concise answer-only system prompt + short token
-    budget — no provider-specific reasoning flag is required or used.
+    Phase 1 model: Qwen/Qwen3-0.6B.
+    Non-thinking behaviour is enforced through a concise answer-only system
+    prompt and a short token budget — no provider-specific reasoning flag is
+    required or used.
     """
 
     def __init__(self) -> None:

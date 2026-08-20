@@ -425,6 +425,192 @@ class RAGEngine:
         self.client.close()
 
     # ========================================================
+    # RETRIEVE + COMPRESS (shared fast path, no LLM)
+    # Returns the intermediate pipeline state dict so callers
+    # can run extractive and/or LLM answer independently.
+    # ========================================================
+
+    def _retrieve_and_compress(self, query: str, language=None):
+        """Run embed → Qdrant → rerank → compress.
+
+        Returns a dict with keys:
+            query, language_code, top3_results, top20_results,
+            compression_result, timings (partial: no llm/answer/total)
+        """
+
+        pipeline_start = time.perf_counter()
+
+        query = query.strip()
+
+        if not query:
+            return None  # caller handles empty query
+
+        # 1. Embedding
+        start = time.perf_counter()
+        query_vector = self.embedder.encode(
+            query,
+            convert_to_numpy=True,
+            normalize_embeddings=True
+        )
+        embedding_ms = (time.perf_counter() - start) * 1000
+
+        # 2. Qdrant retrieval
+        start = time.perf_counter()
+        response = self.client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            limit=TOP_K_RETRIEVAL,
+            with_payload=[
+                "chunk_id", "passage_id", "query_id",
+                "text", "language", "is_selected",
+                "chunk_strategy", "word_count"
+            ],
+            with_vectors=False
+        )
+        hits = response.points
+        qdrant_ms = (time.perf_counter() - start) * 1000
+
+        # 3. Top-20 snapshot
+        top20_results = []
+        for rank, hit in enumerate(hits, start=1):
+            payload = hit.payload or {}
+            top20_results.append({
+                "rank": rank,
+                "chunk_id": payload.get("chunk_id"),
+                "passage_id": payload.get("passage_id"),
+                "query_id": payload.get("query_id"),
+                "text": payload.get("text", ""),
+                "language": payload.get("language"),
+                "vector_score": float(hit.score),
+                "word_count": payload.get("word_count"),
+                "chunk_strategy": payload.get("chunk_strategy"),
+            })
+
+        # 4. Rerank
+        start = time.perf_counter()
+        reranked = rerank(query, hits)
+        rerank_ms = (time.perf_counter() - start) * 1000
+
+        # 5. Top-3
+        top3_results = []
+        for rank, item in enumerate(reranked, start=1):
+            final_score, vector_score, lexical_score, phrase_score_value, hit = item
+            payload = hit.payload or {}
+            top3_results.append({
+                "rank": rank,
+                "chunk_id": payload.get("chunk_id"),
+                "passage_id": payload.get("passage_id"),
+                "query_id": payload.get("query_id"),
+                "text": payload.get("text", ""),
+                "language": payload.get("language"),
+                "score": final_score,
+                "vector_score": vector_score,
+                "lexical_score": lexical_score,
+                "phrase_score": phrase_score_value,
+                "word_count": payload.get("word_count"),
+                "chunk_strategy": payload.get("chunk_strategy"),
+            })
+
+        # 6. Compression
+        compression_result = compress_context(query, top3_results)
+        compression_ms = compression_result["latency_ms"]
+
+        # Resolve language code
+        language_code = normalize_language_code(language)
+        if language_code is None and top3_results:
+            language_code = normalize_language_code(top3_results[0].get("language"))
+        if language_code is None and top3_results:
+            language_code = top3_results[0].get("language")
+
+        return {
+            "query": query,
+            "language_code": language_code,
+            "top3_results": top3_results,
+            "top20_results": top20_results,
+            "compression_result": compression_result,
+            "_pipeline_start": pipeline_start,
+            "timings": {
+                "embedding_ms": round(embedding_ms, 2),
+                "qdrant_ms": round(qdrant_ms, 2),
+                "rerank_ms": round(rerank_ms, 2),
+                "compression_ms": round(compression_ms, 2),
+            },
+        }
+
+    # ========================================================
+    # DUAL ANSWER FAST PATH
+    # Returns (direct_answer_result, intermediate_state)
+    # The caller is responsible for running the LLM step.
+    # ========================================================
+
+    def process_dual(self, query: str, language=None):
+        """Run retrieve+compress, then compute extractive answer.
+
+        Returns a tuple:
+            (direct_result, state)
+
+        direct_result: same shape as process() return value,
+                       using the extractive answer backend.
+        state:         the intermediate dict from _retrieve_and_compress(),
+                       including the compressed context for LLM generation.
+
+        Returns (None, None) if query is empty.
+        """
+
+        state = self._retrieve_and_compress(query, language)
+
+        if state is None:
+            empty = {
+                "answer": "Please provide a question.",
+                "grounded": False, "blocked": True,
+                "reason": "empty_query",
+                "retrieval": {"top20": [], "top3": []},
+                "retrieved_chunks": 0,
+                "sources": [],
+                "timings": {
+                    "embedding_ms": 0.0, "qdrant_ms": 0.0,
+                    "rerank_ms": 0.0, "compression_ms": 0.0,
+                    "llm_ms": 0.0, "answer_ms": 0.0, "total_ms": 0.0,
+                },
+            }
+            return empty, None
+
+        compression_result = state["compression_result"]
+        top3_results = state["top3_results"]
+
+        # Extractive answer (fast, no remote call)
+        answer_start = time.perf_counter()
+        compressed_results = [
+            {"text": s["text"], "score": s.get("score", 0.0)}
+            for s in compression_result["snippets"]
+        ]
+        direct_result = generate_extractive_answer(state["query"], compressed_results)
+        answer_ms = (time.perf_counter() - answer_start) * 1000
+
+        total_ms = (time.perf_counter() - state["_pipeline_start"]) * 1000
+
+        timings = {
+            **state["timings"],
+            "llm_ms": 0.0,
+            "answer_ms": round(answer_ms, 2),
+            "total_ms": round(total_ms, 2),
+        }
+
+        result = {
+            "query": state["query"],
+            "answer": direct_result["answer"],
+            "grounded": direct_result["grounded"],
+            "blocked": direct_result["blocked"],
+            "reason": direct_result["reason"],
+            "retrieval": {"top20": state["top20_results"], "top3": top3_results},
+            "retrieved_chunks": len(top3_results),
+            "sources": top3_results,
+            "timings": timings,
+        }
+
+        return result, state
+
+    # ========================================================
     # PROCESS QUERY
     # ========================================================
 
