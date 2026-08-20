@@ -1,1 +1,1 @@
-python benchmarks/benchmark_qwen_api_manual.py --allow-live-api --token-experiment --warmup 10 --requests 50
+python benchmarks/benchmark_gemini.py --allow-live-api --token-experiment --warmup 10 --requests 50
