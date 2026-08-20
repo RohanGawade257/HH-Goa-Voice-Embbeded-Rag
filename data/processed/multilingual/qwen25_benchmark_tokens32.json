@@ -4,7 +4,7 @@
   "provider": "huggingface",
   "model": "Qwen/Qwen3-0.6B",
   "behavior": "concise-instruct-no-thinking",
-  "max_new_tokens": 16,
+  "max_new_tokens": 32,
   "timeout_seconds": 5.0,
   "retry_policy": {
     "retries": 0
@@ -156,12 +156,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 23.58,
-        "qdrant": 13.35,
-        "rerank": 0.27,
-        "compression": 0.09,
-        "llm": 411.23,
-        "total": 448.52
+        "embedding": 19.8,
+        "qdrant": 11.66,
+        "rerank": 0.24,
+        "compression": 0.08,
+        "llm": 375.1,
+        "total": 406.88
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -188,12 +188,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 20.78,
-        "qdrant": 12.04,
+        "embedding": 14.36,
+        "qdrant": 10.72,
         "rerank": 0.22,
         "compression": 0.08,
-        "llm": 333.22,
-        "total": 366.34
+        "llm": 281.95,
+        "total": 307.33
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -220,12 +220,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 15.49,
-        "qdrant": 10.32,
-        "rerank": 0.41,
-        "compression": 0.2,
-        "llm": 409.16,
-        "total": 435.58
+        "embedding": 15.18,
+        "qdrant": 11.27,
+        "rerank": 0.36,
+        "compression": 0.16,
+        "llm": 383.31,
+        "total": 410.28
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -252,12 +252,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 22.1,
-        "qdrant": 11.45,
-        "rerank": 0.36,
-        "compression": 0.21,
-        "llm": 430.06,
-        "total": 464.18
+        "embedding": 13.66,
+        "qdrant": 11.2,
+        "rerank": 0.28,
+        "compression": 0.16,
+        "llm": 382.98,
+        "total": 408.28
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -284,12 +284,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 11.66,
-        "qdrant": 10.12,
+        "embedding": 19.28,
+        "qdrant": 11.56,
         "rerank": 0.25,
         "compression": 0.09,
-        "llm": 431.39,
-        "total": 453.51
+        "llm": 286.59,
+        "total": 317.77
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -316,12 +316,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 44.9,
-        "qdrant": 14.33,
-        "rerank": 0.35,
-        "compression": 0.11,
-        "llm": 424.06,
-        "total": 483.75
+        "embedding": 16.29,
+        "qdrant": 13.67,
+        "rerank": 0.33,
+        "compression": 0.12,
+        "llm": 368.05,
+        "total": 398.46
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -348,12 +348,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 35.16,
-        "qdrant": 10.65,
-        "rerank": 0.29,
-        "compression": 0.16,
-        "llm": 429.01,
-        "total": 475.27
+        "embedding": 24.84,
+        "qdrant": 17.2,
+        "rerank": 0.46,
+        "compression": 0.28,
+        "llm": 366.5,
+        "total": 409.28
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -380,12 +380,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 29.24,
-        "qdrant": 11.74,
-        "rerank": 0.28,
-        "compression": 0.16,
-        "llm": 418.09,
-        "total": 459.51
+        "embedding": 15.02,
+        "qdrant": 15.79,
+        "rerank": 0.49,
+        "compression": 0.35,
+        "llm": 314.4,
+        "total": 346.05
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -412,12 +412,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 35.35,
-        "qdrant": 11.22,
+        "embedding": 20.12,
+        "qdrant": 11.33,
         "rerank": 0.24,
         "compression": 0.1,
-        "llm": 407.79,
-        "total": 454.7
+        "llm": 343.31,
+        "total": 375.1
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -444,12 +444,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 49.76,
-        "qdrant": 11.02,
+        "embedding": 19.15,
+        "qdrant": 12.77,
         "rerank": 0.21,
         "compression": 0.09,
-        "llm": 515.3,
-        "total": 576.38
+        "llm": 401.32,
+        "total": 433.54
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -476,12 +476,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 31.24,
-        "qdrant": 12.17,
-        "rerank": 0.18,
-        "compression": 0.08,
-        "llm": 431.77,
-        "total": 475.44
+        "embedding": 20.29,
+        "qdrant": 11.32,
+        "rerank": 0.22,
+        "compression": 0.1,
+        "llm": 350.59,
+        "total": 382.52
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -508,12 +508,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 39.3,
-        "qdrant": 11.86,
-        "rerank": 0.22,
-        "compression": 0.08,
-        "llm": 400.92,
-        "total": 452.38
+        "embedding": 18.98,
+        "qdrant": 11.68,
+        "rerank": 0.33,
+        "compression": 0.12,
+        "llm": 377.25,
+        "total": 408.36
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -540,12 +540,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 25.84,
-        "qdrant": 13.56,
+        "embedding": 19.0,
+        "qdrant": 11.99,
         "rerank": 0.31,
         "compression": 0.14,
-        "llm": 418.23,
-        "total": 458.08
+        "llm": 378.01,
+        "total": 409.45
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -572,12 +572,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 22.35,
-        "qdrant": 11.0,
-        "rerank": 0.24,
-        "compression": 0.08,
-        "llm": 423.27,
-        "total": 456.94
+        "embedding": 19.0,
+        "qdrant": 12.36,
+        "rerank": 0.31,
+        "compression": 0.1,
+        "llm": 378.53,
+        "total": 410.3
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -604,12 +604,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 17.57,
-        "qdrant": 10.66,
-        "rerank": 0.23,
-        "compression": 0.08,
-        "llm": 439.59,
-        "total": 468.13
+        "embedding": 23.77,
+        "qdrant": 9.83,
+        "rerank": 0.28,
+        "compression": 0.09,
+        "llm": 374.28,
+        "total": 408.25
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -636,12 +636,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 18.26,
-        "qdrant": 12.19,
+        "embedding": 17.22,
+        "qdrant": 11.83,
         "rerank": 0.36,
         "compression": 0.16,
-        "llm": 420.84,
-        "total": 451.81
+        "llm": 380.7,
+        "total": 410.27
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -668,12 +668,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 19.47,
-        "qdrant": 11.14,
-        "rerank": 0.28,
-        "compression": 0.16,
-        "llm": 429.0,
-        "total": 460.05
+        "embedding": 20.97,
+        "qdrant": 11.35,
+        "rerank": 0.35,
+        "compression": 0.18,
+        "llm": 375.78,
+        "total": 408.63
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -700,12 +700,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 13.03,
-        "qdrant": 11.4,
+        "embedding": 18.98,
+        "qdrant": 11.5,
         "rerank": 0.25,
         "compression": 0.09,
-        "llm": 443.97,
-        "total": 468.74
+        "llm": 378.87,
+        "total": 409.69
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -732,12 +732,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 19.58,
-        "qdrant": 11.57,
-        "rerank": 0.29,
-        "compression": 0.1,
-        "llm": 557.24,
-        "total": 588.78
+        "embedding": 17.39,
+        "qdrant": 10.74,
+        "rerank": 0.26,
+        "compression": 0.12,
+        "llm": 380.73,
+        "total": 409.24
       },
       "http_status": 401,
       "timeout_seconds": null,
@@ -764,12 +764,12 @@
       "status": "HTTP_ERROR",
       "reason": "qwen_api_http_error",
       "timing_ms": {
-        "embedding": 15.03,
-        "qdrant": 11.09,
-        "rerank": 0.28,
-        "compression": 0.16,
-        "llm": 414.79,
-        "total": 441.35
+        "embedding": 23.56,
+        "qdrant": 9.81,
+        "rerank": 0.29,
+        "compression": 0.17,
+        "llm": 397.03,
+        "total": 430.86
       },
       "http_status": 401,
       "timeout_seconds": null,

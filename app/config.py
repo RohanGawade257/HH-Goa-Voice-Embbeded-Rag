@@ -69,7 +69,10 @@ LLM_CHAT_COMPLETIONS_URL = os.getenv(
 # Backward-compatible aliases for existing Hugging Face environment files.
 HF_API_KEY = LLM_API_KEY
 HF_CHAT_COMPLETIONS_URL = LLM_CHAT_COMPLETIONS_URL
-QWEN_MODEL = os.getenv("QWEN_MODEL", "Qwen/Qwen3-0.6B")
+# Phase 2: replaced Qwen3-0.6B with Qwen2.5-0.5B-Instruct.
+# Qwen2.5-0.5B-Instruct is a pure instruction-following model with no
+# chain-of-thought / thinking capability, which keeps generation concise.
+QWEN_MODEL = os.getenv("QWEN_MODEL", "Qwen/Qwen2.5-0.5B-Instruct")
 MAX_NEW_TOKENS = get_int("MAX_NEW_TOKENS", 64)
 LLM_TIMEOUT_SECONDS = get_float("LLM_TIMEOUT_SECONDS", 5.0)
 LLM_TEMPERATURE = get_float("LLM_TEMPERATURE", 0.0)

@@ -54,10 +54,12 @@ class LLMGenerationTests(unittest.TestCase):
 
         self.assertFalse(result["blocked"])
         self.assertTrue(result["grounded"])
+        self.assertEqual(result["status"], "SUCCESS")
         self.assertEqual(seen["payload"]["model"], generator.model_name)
         system_prompt = seen["payload"]["messages"][0]["content"]
         user_prompt = seen["payload"]["messages"][1]["content"]
-        self.assertIn("Use only the supplied evidence", system_prompt)
+        # Phase 2: prompt uses "Use ONLY the supplied evidence"
+        self.assertIn("supplied evidence", system_prompt)
         self.assertIn("Evidence:", user_prompt)
         self.assertIn("Question:", user_prompt)
 
@@ -78,6 +80,7 @@ class LLMGenerationTests(unittest.TestCase):
         self.assertFalse(called)
         self.assertTrue(result["blocked"])
         self.assertEqual(result["reason"], "missing_context")
+        self.assertEqual(result["status"], "EXCEPTION")
         self.assertEqual(result["answer"], missing_context_answer("mr"))
 
     def test_http_failure_is_reported_without_secret_output(self):
@@ -91,7 +94,9 @@ class LLMGenerationTests(unittest.TestCase):
             generator.close()
 
         self.assertTrue(result["blocked"])
-        self.assertEqual(result["reason"], "qwen_api_error")
+        self.assertEqual(result["status"], "HTTP_ERROR")
+        self.assertEqual(result["reason"], "qwen_api_http_error")
+        self.assertEqual(result["http_status"], 500)
         self.assertNotIn("unit-test-key", result.get("error", ""))
 
     def test_timeout_is_reported(self):
@@ -105,7 +110,23 @@ class LLMGenerationTests(unittest.TestCase):
             generator.close()
 
         self.assertTrue(result["blocked"])
+        self.assertEqual(result["status"], "TIMEOUT")
         self.assertEqual(result["reason"], "qwen_api_timeout")
+
+    def test_unexpected_exception_is_reported(self):
+        def handler(request):
+            raise RuntimeError("mock transport exploded")
+
+        generator = self.make_generator(handler)
+        try:
+            result = generator.generate("question", "hi", "evidence")
+        finally:
+            generator.close()
+
+        self.assertTrue(result["blocked"])
+        self.assertEqual(result["status"], "EXCEPTION")
+        self.assertEqual(result["reason"], "qwen_api_error")
+        self.assertEqual(result["exception_type"], "RuntimeError")
 
 
 if __name__ == "__main__":

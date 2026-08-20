@@ -421,7 +421,7 @@ class RAGEngine:
     # PROCESS QUERY
     # ========================================================
 
-    def process(self, query: str, language=None):
+    def process(self, query: str, language=None, max_tokens: int | None = None):
 
         pipeline_start = time.perf_counter()
 
@@ -681,7 +681,8 @@ class RAGEngine:
             answer_result = self.answer_generator.generate(
                 query,
                 language_code or "",
-                compression_result["context"]
+                compression_result["context"],
+                max_tokens=max_tokens,
             )
 
         else:
@@ -727,6 +728,11 @@ class RAGEngine:
             if ANSWER_BACKEND in {"qwen", "qwen_api"}
             else 0.0
         )
+        answer_metadata = {
+            key: value
+            for key, value in answer_result.items()
+            if key != "answer"
+        }
 
         return {
 
@@ -747,6 +753,8 @@ class RAGEngine:
             "reason": answer_result[
                 "reason"
             ],
+
+            "answer_generation": answer_metadata,
 
             # IMPORTANT:
             # Preserve both retrieval stages.
