@@ -136,13 +136,13 @@ export default function Hero({ onQueryClick, onExampleSelect }: HeroProps) {
               AI4Bharat MSMARCO-XI knowledge base. Powered by multilingual semantic
               retrieval with{" "}
               <span style={{ color: "rgba(245,243,238,0.75)" }}>
-                extractive answers in under 60 ms
+                extractive answers at 38ms P50
               </span>{" "}
-              and an{" "}
+              and a{" "}
               <span style={{ color: "var(--accent-light)" }}>
-                AI-enhanced answer
+                Gemini 2.5 Flash Lite AI answer
               </span>{" "}
-              following shortly after.
+              streaming shortly after.
             </motion.p>
           </div>
 
@@ -154,9 +154,9 @@ export default function Hero({ onQueryClick, onExampleSelect }: HeroProps) {
             transition={{ delay: 0.7, duration: 0.5 }}
           >
             {[
-              { value: "13",    label: "Languages" },
-              { value: "57ms",  label: "P95 direct" },
-              { value: "6K+",   label: "Chunks indexed" },
+              { value: "13",      label: "Languages" },
+              { value: "38ms",    label: "P50 direct" },
+              { value: "10,302",  label: "Chunks indexed" },
             ].map((stat) => (
               <div key={stat.label}>
                 <div
@@ -216,8 +216,8 @@ export default function Hero({ onQueryClick, onExampleSelect }: HeroProps) {
               style={{ color: "var(--color-ink-muted)" }}
             >
               Type or speak your question. The system retrieves the most
-              relevant passages and returns a grounded answer in under 60 ms,
-              followed by an AI-enhanced answer.
+              relevant passages and returns an extractive answer at 38ms P50,
+              followed by a Gemini AI-enhanced answer.
             </p>
 
             {/* Primary CTA */}

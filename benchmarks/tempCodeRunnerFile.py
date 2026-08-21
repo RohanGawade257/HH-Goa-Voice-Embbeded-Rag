@@ -1,0 +1,1 @@
+python benchmarks/benchmark.py 200 --no-llm

@@ -7,13 +7,13 @@ const STEPS = [
     n: "01",
     title: "Voice or text input",
     hindi: "आवाज़ या टेक्स्ट",
-    desc: "Speak or type your question in Hindi. Sarvam STT converts speech to text with full Devanagari fidelity.",
+    desc: "Speak or type your question in any of 13 Indian languages. Sarvam STT converts speech to text with full Devanagari fidelity.",
   },
   {
     n: "02",
     title: "Semantic embedding",
     hindi: "अर्थ-आधारित एम्बेडिंग",
-    desc: "The query is encoded into a 384-dimensional semantic vector using a multilingual MiniLM model — no translation needed.",
+    desc: "The query is encoded into a 384-dimensional semantic vector using a multilingual MiniLM-L12 model — no translation needed.",
   },
   {
     n: "03",
@@ -29,15 +29,15 @@ const STEPS = [
   },
   {
     n: "05",
-    title: "Grounded answer",
-    hindi: "आधारित उत्तर",
-    desc: "An extractive answer is assembled from the top passage. Guardrails block unsupported responses. No hallucination.",
+    title: "Dual-mode answer",
+    hindi: "दोहरा उत्तर",
+    desc: "An extractive answer returns in ~38ms P50. Gemini 2.5 Flash Lite then streams an AI-enhanced answer asynchronously.",
   },
   {
     n: "06",
-    title: "≤55ms",
+    title: "≤38ms direct",
     hindi: "अत्यंत तेज़",
-    desc: "The entire post-STT pipeline completes in under 55ms P100, well within the 200ms target.",
+    desc: "The extractive post-STT pipeline completes at 38ms P50 / 110ms P100, well within the 200ms target.",
     accent: true,
   },
 ];
@@ -71,7 +71,7 @@ export default function HowItWorks() {
             style={{ color: "rgba(245,243,238,0.4)" }}
           >
             Six stages from spoken word to grounded answer.
-            Each one measured, benchmarked, and frozen.
+            Each one measured, benchmarked, and verified.
           </p>
         </div>
 

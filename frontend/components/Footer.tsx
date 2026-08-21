@@ -31,8 +31,8 @@ export default function Footer() {
               className="text-sm leading-relaxed"
               style={{ color: "rgba(245,243,238,0.4)" }}
             >
-              Voice-Enabled Hindi RAG — Hacker House Goa 2026, Task 2.
-              AI4Bharat MSMARCO-XI knowledge base.
+              Voice-Enabled Multilingual RAG — Hacker House Goa 2026, Task 2.
+              13 Indian languages · AI4Bharat MSMARCO-XI knowledge base.
             </p>
           </div>
 
@@ -49,8 +49,9 @@ export default function Footer() {
                 "MiniLM-L12 embeddings (384d)",
                 "Qdrant vector DB (10,302 chunks)",
                 "Lexical reranker (Top-20 → Top-3)",
-                "Extractive answer generation",
-                "Sarvam STT (Hindi)",
+                "Extractive direct answer (~38ms P50)",
+                "Gemini 2.5 Flash Lite (AI answer, streaming)",
+                "Sarvam STT (13 Indian languages)",
               ].map((item) => (
                 <li
                   key={item}
@@ -73,11 +74,11 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2">
               {[
-                ["Recall@3", "79.1%"],
-                ["Grounded", "99.7%"],
-                ["P95 latency", "42ms"],
-                ["P100 latency", "55ms"],
-                ["Dataset", "1,000 queries"],
+                ["Recall@3",   "79.1%"],
+                ["Grounded",   "99.7%"],
+                ["P50 latency","38ms"],
+                ["P100 latency","110ms"],
+                ["Dataset",    "1,000 queries"],
               ].map(([k, v]) => (
                 <li
                   key={k}
@@ -105,7 +106,7 @@ export default function Footer() {
             className="text-xs"
             style={{ color: "rgba(245,243,238,0.25)" }}
           >
-            HH-Goa-Rag © 2026 · Phase 2 benchmark frozen · Built with Next.js + FastAPI
+            HH-Goa-Rag © 2026 · Verified baseline · Built with Next.js + FastAPI + Gemini
           </p>
           <div className="flex items-center gap-4">
             <a

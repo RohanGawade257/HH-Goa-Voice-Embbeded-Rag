@@ -25,15 +25,15 @@ const METRICS = [
     color: "#4CAF50",
   },
   {
-    label: "P95 Latency",
-    value: "42ms",
-    sub: "post-STT pipeline",
-    desc: "Embed + Qdrant + Rerank + Answer",
+    label: "P50 Latency",
+    value: "38ms",
+    sub: "post-STT pipeline (direct)",
+    desc: "Embed + Qdrant + Rerank + Extractive answer",
     color: "var(--accent)",
   },
   {
     label: "P100 Latency",
-    value: "55ms",
+    value: "110ms",
     sub: "worst-case observed",
     desc: "Every query under 200ms target",
     color: "var(--accent)",
@@ -48,10 +48,10 @@ const METRICS = [
 ];
 
 const STAGE_BREAKDOWN = [
-  { label: "Embed",  pct: 44, ms: "17ms avg" },
-  { label: "Qdrant", pct: 47, ms: "18ms avg" },
-  { label: "Rerank", pct: 5,  ms: "2ms avg"  },
-  { label: "Answer", pct: 1,  ms: "0.2ms avg"},
+  { label: "Embed",   pct: 44, ms: "17ms avg" },
+  { label: "Qdrant",  pct: 49, ms: "19ms avg" },
+  { label: "Rerank",  pct: 5,  ms: "2ms avg"  },
+  { label: "Answer",  pct: 1,  ms: "0.2ms avg"},
 ];
 
 export default function BenchmarkSection() {
@@ -81,7 +81,7 @@ export default function BenchmarkSection() {
               className="text-sm max-w-xs leading-relaxed"
               style={{ color: "var(--color-ink-muted)" }}
             >
-              Phase 2 frozen baseline. 1,000 Hindi queries
+              Verified baseline. 13,000 queries
               from AI4Bharat MSMARCO-XI.
             </p>
           </div>
@@ -131,7 +131,7 @@ export default function BenchmarkSection() {
             className="text-xs mb-6"
             style={{ color: "var(--color-ink-muted)" }}
           >
-            Where the 38ms average is spent
+            Where the 38ms P50 is spent (direct-answer path)
           </p>
 
           <div className="space-y-4">
@@ -171,11 +171,11 @@ export default function BenchmarkSection() {
             className="mt-6 text-xs leading-relaxed"
             style={{ color: "var(--color-ink-muted)" }}
           >
-            All measurements on CPU (Windows, Intel). P95 = 42ms.
-            P100 = 55ms. Budget = 200ms.{" "}
+            All measurements on CPU (Windows, Intel). P50 = 38ms. P100 = 110ms. Budget = 200ms.{" "}
             <span className="font-semibold" style={{ color: "var(--accent)" }}>
-              4.5× headroom at P100.
-            </span>
+              1.8× headroom at P100.
+            </span>{" "}
+            Gemini 2.5 Flash Lite AI answer streams in asynchronously after the direct answer.
           </p>
         </div>
       </div>
