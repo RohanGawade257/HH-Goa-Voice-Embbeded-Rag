@@ -30,6 +30,8 @@ function getErrorMessage(code: string | undefined | null): string {
       return "Gemini backend is not enabled on this server.";
     case "missing_context":
       return "No relevant context was found to generate an AI answer.";
+    case "empty_response":
+      return "AI model returned an empty response.";
     default:
       return code;
   }
@@ -48,10 +50,21 @@ export default function AnswerCard({ result, onClear }: AnswerCardProps) {
 
   const { directAnswer, llmAnswer, sources, timing } = result;
 
-  // LLM answer section visibility: show if pending OR received
+  // LLM answer section visibility: show if pending OR received.
+  // llmFailed covers two cases:
+  //   1. An explicit error code was returned (llm_unavailable, gemini_disabled, etc.)
+  //   2. The LLM ran but returned an empty / falsy answer with no error field —
+  //      treat that as "empty_response" so the section never silently vanishes.
   const llmPending = directAnswer !== null && llmAnswer === null;
-  const llmFailed = llmAnswer?.error !== undefined && llmAnswer.error !== null;
-  const llmSuccess = llmAnswer !== null && !llmFailed && llmAnswer.answer;
+  const llmHasExplicitError =
+    llmAnswer?.error !== undefined && llmAnswer.error !== null;
+  const llmHasEmptyAnswer =
+    llmAnswer !== null && !llmHasExplicitError && !llmAnswer.answer;
+  const llmFailed = llmHasExplicitError || llmHasEmptyAnswer;
+  const llmSuccess = llmAnswer !== null && !llmFailed && Boolean(llmAnswer.answer);
+
+  // Synthesise a display error code for the empty-answer case.
+  const llmErrorCode = llmHasEmptyAnswer ? "empty_response" : llmAnswer?.error;
 
   const directIsGrounded = directAnswer?.grounded && !directAnswer?.blocked;
 
@@ -210,7 +223,7 @@ export default function AnswerCard({ result, onClear }: AnswerCardProps) {
             </div>
             <div className="flex items-center gap-2 text-sm" style={{ color: "var(--color-ink-muted)" }}>
               <AlertTriangle size={14} className="shrink-0" />
-              <span>{getErrorMessage(llmAnswer.error)}</span>
+              <span>{getErrorMessage(llmErrorCode)}</span>
             </div>
           </motion.div>
         )}

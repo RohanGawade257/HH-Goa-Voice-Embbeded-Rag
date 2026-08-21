@@ -71,40 +71,82 @@ SCRIPT_LANGUAGE_RANGES = [
     ("\u0600", "\u06ff", "ur-IN"),
 ]
 
+# Characters that appear in Marathi with higher frequency than Hindi.
+# ळ (U+0933) and ऱ (U+0931) are the clearest Marathi-distinctive chars;
+# ॲ (U+0972) is an Marathi extension character not used in standard Hindi.
+_MARATHI_DISTINCTIVE_CHARS = frozenset("\u0933\u0931\u0972")
+
 DEVANAGARI_LANGUAGE_MARKERS = {
     "mr-IN": {
-        "कधी", "काय", "झाला", "झाली", "झाले", "होता", "होती", "होते",
-        "आहे", "आहेत", "नाही", "माझ्या", "त्याचा", "त्याची", "त्याचे",
-        "मध्ये", "पासून", "पर्यंत", "कुठे", "कोणता", "कोणती",
+        # Question / interrogative words
+        "कधी", "काय", "कुठे", "कुणाचा", "कसे", "कसा", "कशासाठी",
+        # Verb forms unique/common in Marathi
+        "झाला", "झाली", "झाले", "झालेले", "झालेली", "झालेलं",
+        "होता", "होती", "होते", "होतो",
+        "आहे", "आहेत", "नाही", "नव्हते", "नव्हता",
+        # Postpositions / grammatical particles
+        "मध्ये", "पासून", "पर्यंत", "साठी", "वर", "खाली", "जवळ",
+        # Possessives / pronouns
+        "माझ्या", "माझा", "माझी", "माझे",
+        "त्याचा", "त्याची", "त्याचे",
+        "त्यांचा", "त्यांची", "त्यांचे",
+        # Common Marathi nouns / connectives
+        "प्रकल्प", "परिणाम", "मराठी", "महाराष्ट्र",
+        "कोणता", "कोणती", "कोण", "सर्व", "म्हणजे",
     },
     "hi-IN": {
-        "क्या", "कब", "कौन", "कहाँ", "क्यों", "कैसे", "था", "थी", "थे",
-        "है", "हैं", "नहीं", "मेरे", "मेरा", "उसका", "उसकी", "उसके",
-        "भारत", "हुआ", "हुई", "मुक्त", "आजाद", "आज़ाद",
+        "क्या", "कब", "कौन", "कहाँ", "क्यों", "कैसे",
+        "था", "थी", "थे", "है", "हैं", "हो",
+        "नहीं", "नही",
+        "मेरे", "मेरा", "मेरी",
+        "उसका", "उसकी", "उसके",
+        "उनका", "उनकी", "उनके",
+        "भारत", "हुआ", "हुई", "हुए",
+        "मुक्त", "आजाद", "आज़ाद",
+        "परियोजना", "प्रश्न", "उत्तर",
+        "लेकिन", "इसलिए", "तथा",
     },
     "ne-IN": {
-        "के", "कहिले", "किन", "कसरी", "छ", "छन्", "थियो", "भयो",
+        "के", "कहिले", "किन", "कसरी",
+        "छ", "छन्", "थियो", "भयो",
         "नेपाल", "सँग", "बाट", "लाई",
     },
     "sa-IN": {
-        "किम्", "कदा", "कुत्र", "अस्ति", "आसीत्", "भवति", "भारतस्य",
-        "नगरस्य", "समयः", "प्राप्तुम्",
+        "किम्", "कदा", "कुत्र", "अस्ति", "आसीत्",
+        "भवति", "भारतस्य", "नगरस्य", "समयः", "प्राप्तुम्",
     },
 }
 
 
-def _infer_transcript_language(transcript: str) -> str | None:
+def _infer_transcript_language(transcript: str, hint: str | None = None) -> str | None:
     """Best-effort language inference for STT transcripts.
 
-    Sarvam can be asked for auto-detection, but when a provider returns
-    ``unknown`` or echoes a request hint, this keeps answer-language selection
-    tied to the actual text without a remote translation/detection call.
+    Sarvam echoes back the caller-supplied ``language_code`` hint rather than
+    the language it actually detected, so we infer from the transcript text:
+
+    1. Script-range check — unique scripts (Bengali, Gujarati, Kannada, …).
+    2. Devanagari distinctive-character check — ळ/ऱ/ॲ signal Marathi.
+    3. Lexical marker check — word-level disambiguation for Devanagari.
+    4. Hint fallback — use ``hint`` (the UI-selected language) if it is a
+       Devanagari language and no markers were found; avoids defaulting to Hindi
+       when the user already told us the language.
+    5. Latin-script fallback — en-IN.
+
+    Args:
+        transcript: Raw STT output text.
+        hint: BCP-47 code from the UI language selector (e.g. ``"mr-IN"``).
+              Used only as a tie-breaker when lexical disambiguation is
+              inconclusive.
+
+    Returns:
+        A BCP-47 language code string, or ``None`` if detection is impossible.
     """
 
     text = transcript.strip()
     if not text:
         return None
 
+    # ── Step 1: unique-script languages ─────────────────────────────────────
     script_counts: dict[str, int] = {}
     for char in text:
         for start, end, language in SCRIPT_LANGUAGE_RANGES:
@@ -115,15 +157,34 @@ def _infer_transcript_language(transcript: str) -> str | None:
     if script_counts:
         return max(script_counts.items(), key=lambda item: item[1])[0]
 
+    # ── Step 2: Devanagari disambiguation ───────────────────────────────────
     if any("\u0900" <= char <= "\u097f" for char in text):
+
+        # Step 2a: Marathi-distinctive characters (ळ, ऱ, ॲ) — high confidence
+        if any(char in _MARATHI_DISTINCTIVE_CHARS for char in text):
+            return "mr-IN"
+
+        # Step 2b: Lexical marker scoring
         tokens = set(re.findall(r"[\w\u0900-\u097f]+", text, re.UNICODE))
         scores = {
             language: len(tokens.intersection(markers))
             for language, markers in DEVANAGARI_LANGUAGE_MARKERS.items()
         }
         best_language, best_score = max(scores.items(), key=lambda item: item[1])
-        return best_language if best_score > 0 else None
 
+        if best_score > 0:
+            return best_language
+
+        # Step 2c: Hint fallback — if the caller told us the language and it is
+        # a Devanagari language, trust it rather than defaulting to Hindi.
+        _DEVANAGARI_LANGS = {"hi-IN", "mr-IN", "ne-IN", "sa-IN"}
+        if hint and hint in _DEVANAGARI_LANGS:
+            return hint
+
+        # Last resort for Devanagari: return None so the caller can decide.
+        return None
+
+    # ── Step 3: Latin script ─────────────────────────────────────────────────
     if re.search(r"[A-Za-z]", text):
         return "en-IN"
 
@@ -704,7 +765,10 @@ async def voice(
     # We use script/lexical inference on the transcript itself so the RAG
     # pipeline and LLM always respond in the user's actual spoken language,
     # regardless of which language was pre-selected on the UI.
-    inferred_language = _infer_transcript_language(transcript)
+    # Pass the UI-selected `language` as a hint so that, for Devanagari scripts
+    # with no clear lexical markers, we prefer the user's explicit selection
+    # over blindly defaulting to Hindi.
+    inferred_language = _infer_transcript_language(transcript, hint=language)
     if inferred_language:
         answer_language = inferred_language
         logger.info(
