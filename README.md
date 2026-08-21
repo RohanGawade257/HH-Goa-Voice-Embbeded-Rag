@@ -53,7 +53,7 @@ cp .env.example .env
 # Edit .env and set SARVAM_API_KEY if you have one
 
 # Start the API server
-uvicorn app.api:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.api:app --host 0.0.0.0 --port 8000 --reload 
 ```
 
 The server starts at **http://localhost:8000**. The Qdrant index loads once at startup (~2 s).

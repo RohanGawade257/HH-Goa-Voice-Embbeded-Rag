@@ -172,6 +172,22 @@ export default function QuerySection({ defaultQuery, defaultLanguage }: QuerySec
             error: "AI answer was not returned by the voice endpoint.",
             time_to_llm_ms: timings?.total_ms ?? 0,
           };
+
+          // Auto-update the selected language to match the detected spoken
+          // language returned by the backend. This ensures subsequent text
+          // queries use the correct language and the UI badge reflects reality.
+          if (data.answer_language) {
+            // answer_language is a BCP-47 code like "mr-IN" or "hi-IN"
+            const detectedLang = LANGUAGES.find((l) => l.code === data.answer_language);
+            if (detectedLang && detectedLang.code !== selectedLang.code) {
+              setSelectedLang(detectedLang);
+              console.info("VOICE RESPONSE language auto-switched:", {
+                from: selectedLang.code,
+                to: detectedLang.code,
+              });
+            }
+          }
+
           console.info("VOICE RESPONSE direct_answer received", {
             requestedLanguage: data.requested_language_code ?? selectedLang.code,
             sttLanguage: data.language_code,

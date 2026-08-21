@@ -23,9 +23,13 @@ function getErrorMessage(code: string | undefined | null): string {
   if (!code) return "AI answer unavailable.";
   switch (code) {
     case "llm_unavailable":
-      return "AI answer requires a configured API key.";
+      return "AI answer requires a configured API key (GEMINI_API_KEY).";
     case "empty_query":
       return "No query was provided.";
+    case "gemini_disabled":
+      return "Gemini backend is not enabled on this server.";
+    case "missing_context":
+      return "No relevant context was found to generate an AI answer.";
     default:
       return code;
   }
@@ -139,19 +143,25 @@ export default function AnswerCard({ result, onClear }: AnswerCardProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="p-6"
+            className="p-6 lg:p-8"
             style={{
               border: "2px dashed var(--border)",
               background: "var(--color-panel)",
             }}
           >
             <div className="flex items-center gap-2.5 mb-4">
-              <Loader2 size={15} className="animate-spin" style={{ color: "var(--color-ink-muted)" }} />
+              <Loader2 size={15} className="animate-spin" style={{ color: "#7c5cd8" }} />
               <span
                 className="text-xs font-semibold uppercase tracking-widest"
-                style={{ color: "var(--color-ink-muted)" }}
+                style={{ color: "#7c5cd8" }}
               >
-                AI answer loading…
+                AI answer
+              </span>
+              <span
+                className="text-[10px] px-1.5 py-0.5 rounded font-mono"
+                style={{ background: "rgba(124,92,216,0.14)", color: "#7c5cd8" }}
+              >
+                generating…
               </span>
             </div>
             <div className="space-y-2">
@@ -170,24 +180,38 @@ export default function AnswerCard({ result, onClear }: AnswerCardProps) {
           </motion.div>
         )}
 
-        {/* Failed */}
+        {/* Failed — shown as a proper card, not a tiny chip */}
         {llmFailed && llmAnswer && (
           <motion.div
             key="llm-error"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="px-5 py-4 text-xs flex items-center gap-2"
+            className="p-6 lg:p-8"
             style={{
-              border: "2px dashed var(--border)",
-              color: "var(--color-ink-muted)",
+              background: "var(--color-panel)",
+              border: "2px solid var(--border)",
             }}
           >
-            <AlertTriangle size={13} />
-            {getErrorMessage(llmAnswer.error)}
-            <span className="ml-auto font-mono">
-              {llmAnswer.time_to_llm_ms.toFixed(0)} ms
-            </span>
+            <div className="flex items-center gap-2.5 mb-4">
+              <Sparkles size={16} style={{ color: "#7c5cd8", opacity: 0.4 }} />
+              <span
+                className="text-xs font-semibold uppercase tracking-widest"
+                style={{ color: "#7c5cd8", opacity: 0.6 }}
+              >
+                AI answer
+              </span>
+              <span
+                className="text-[10px] px-1.5 py-0.5 rounded font-mono"
+                style={{ background: "rgba(124,92,216,0.10)", color: "#7c5cd8", opacity: 0.7 }}
+              >
+                {llmAnswer.time_to_llm_ms.toFixed(0)} ms
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm" style={{ color: "var(--color-ink-muted)" }}>
+              <AlertTriangle size={14} className="shrink-0" />
+              <span>{getErrorMessage(llmAnswer.error)}</span>
+            </div>
           </motion.div>
         )}
 

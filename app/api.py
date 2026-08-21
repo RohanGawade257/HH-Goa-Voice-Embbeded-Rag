@@ -17,6 +17,7 @@ import asyncio
 import io
 import json
 import os
+import re
 import time
 import logging
 from pathlib import Path
@@ -53,6 +54,80 @@ from app.voice.stt import STTConfigurationError, STTError, transcribe_audio, stt
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# VOICE LANGUAGE DETECTION
+# ============================================================
+
+SCRIPT_LANGUAGE_RANGES = [
+    ("\u0980", "\u09ff", "bn-IN"),
+    ("\u0a80", "\u0aff", "gu-IN"),
+    ("\u0c80", "\u0cff", "kn-IN"),
+    ("\u0d00", "\u0d7f", "ml-IN"),
+    ("\u0b00", "\u0b7f", "or-IN"),
+    ("\u0a00", "\u0a7f", "pa-IN"),
+    ("\u0b80", "\u0bff", "ta-IN"),
+    ("\u0600", "\u06ff", "ur-IN"),
+]
+
+DEVANAGARI_LANGUAGE_MARKERS = {
+    "mr-IN": {
+        "कधी", "काय", "झाला", "झाली", "झाले", "होता", "होती", "होते",
+        "आहे", "आहेत", "नाही", "माझ्या", "त्याचा", "त्याची", "त्याचे",
+        "मध्ये", "पासून", "पर्यंत", "कुठे", "कोणता", "कोणती",
+    },
+    "hi-IN": {
+        "क्या", "कब", "कौन", "कहाँ", "क्यों", "कैसे", "था", "थी", "थे",
+        "है", "हैं", "नहीं", "मेरे", "मेरा", "उसका", "उसकी", "उसके",
+        "भारत", "हुआ", "हुई", "मुक्त", "आजाद", "आज़ाद",
+    },
+    "ne-IN": {
+        "के", "कहिले", "किन", "कसरी", "छ", "छन्", "थियो", "भयो",
+        "नेपाल", "सँग", "बाट", "लाई",
+    },
+    "sa-IN": {
+        "किम्", "कदा", "कुत्र", "अस्ति", "आसीत्", "भवति", "भारतस्य",
+        "नगरस्य", "समयः", "प्राप्तुम्",
+    },
+}
+
+
+def _infer_transcript_language(transcript: str) -> str | None:
+    """Best-effort language inference for STT transcripts.
+
+    Sarvam can be asked for auto-detection, but when a provider returns
+    ``unknown`` or echoes a request hint, this keeps answer-language selection
+    tied to the actual text without a remote translation/detection call.
+    """
+
+    text = transcript.strip()
+    if not text:
+        return None
+
+    script_counts: dict[str, int] = {}
+    for char in text:
+        for start, end, language in SCRIPT_LANGUAGE_RANGES:
+            if start <= char <= end:
+                script_counts[language] = script_counts.get(language, 0) + 1
+                break
+
+    if script_counts:
+        return max(script_counts.items(), key=lambda item: item[1])[0]
+
+    if any("\u0900" <= char <= "\u097f" for char in text):
+        tokens = set(re.findall(r"[\w\u0900-\u097f]+", text, re.UNICODE))
+        scores = {
+            language: len(tokens.intersection(markers))
+            for language, markers in DEVANAGARI_LANGUAGE_MARKERS.items()
+        }
+        best_language, best_score = max(scores.items(), key=lambda item: item[1])
+        return best_language if best_score > 0 else None
+
+    if re.search(r"[A-Za-z]", text):
+        return "en-IN"
+
+    return None
 
 
 # ============================================================
@@ -622,13 +697,32 @@ async def voice(
 
     transcript = stt_result.get("transcript", "").strip()
     stt_language_code = stt_result.get("language_code") or language
-    answer_language = _language_for_rag(stt_language_code, language)
+
+    # ── Auto-detect the spoken language from the transcript text ──────────
+    # Sarvam STT echoes back whichever language_code the caller sent
+    # (the UI-selected language), NOT the language actually spoken.
+    # We use script/lexical inference on the transcript itself so the RAG
+    # pipeline and LLM always respond in the user's actual spoken language,
+    # regardless of which language was pre-selected on the UI.
+    inferred_language = _infer_transcript_language(transcript)
+    if inferred_language:
+        answer_language = inferred_language
+        logger.info(
+            "VOICE PIPELINE language auto-detected from transcript: %s (overrides stt_code=%s)",
+            inferred_language,
+            stt_language_code,
+        )
+    else:
+        answer_language = _language_for_rag(stt_language_code, language)
 
     logger.info(
-        "VOICE PIPELINE STT complete provider=%s requested_language=%s stt_language=%s latency_ms=%s transcript_chars=%s",
+        "VOICE PIPELINE STT complete provider=%s requested_language=%s stt_language=%s "
+        "inferred_language=%s answer_language=%s latency_ms=%s transcript_chars=%s",
         stt_result.get("provider", "unknown"),
         stt_result.get("requested_language_code", language),
         stt_language_code,
+        inferred_language,
+        answer_language,
         stt_result.get("latency_ms", 0.0),
         len(transcript),
     )
@@ -772,7 +866,7 @@ async def voice(
         stt_provider=stt_result.get("provider", "unknown"),
         language_code=stt_language_code,
         requested_language_code=stt_result.get("requested_language_code", language),
-        answer_language=state.get("language_code") if state else answer_language,
+        answer_language=answer_language,
         query=direct_result.get("query", transcript),
         answer=direct_result.get("answer", ""),
         grounded=bool(direct_result.get("grounded", False)),
