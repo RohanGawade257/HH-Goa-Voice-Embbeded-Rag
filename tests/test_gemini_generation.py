@@ -108,6 +108,13 @@ class InitialisationTests(unittest.TestCase):
         result = gen.generate("capital?", "hi", "Paris is the capital.")
         self.assertEqual(result.get("provider"), "gemini")
 
+    def test_first_try_success_has_attempt_count_1(self):
+        """Harness must report attempt_count=1 and no retry delays on happy path."""
+        gen, _ = _make_generator(["मैनहट्टन परियोजना एक अनुसंधान परियोजना थी।"])
+        result = gen.generate("मैनहट्टन परियोजना क्या थी?", "hi", "यह प्रमाण है।")
+        self.assertEqual(result.get("attempt_count"), 1)
+        self.assertEqual(result.get("retry_delays_ms"), [])
+
 
 # ---------------------------------------------------------------------------
 # 3 — max_output_tokens override
@@ -199,18 +206,18 @@ class SuccessTests(unittest.TestCase):
         self.assertGreater(result["ttft_ms"], 0.0)
 
     def test_llm_ms_is_positive_on_success(self):
-        gen, _ = _make_generator(["answer"])
-        result = gen.generate("q", "hi", "evidence")
+        gen, _ = _make_generator(["मैनहट्टन परियोजना थी।"])
+        result = gen.generate("q", "hi", "प्रमाण।")
         self.assertGreater(result["llm_ms"], 0.0)
 
     def test_latency_ms_aliases_llm_ms(self):
-        gen, _ = _make_generator(["answer"])
-        result = gen.generate("q", "hi", "evidence")
+        gen, _ = _make_generator(["मैनहट्टन परियोजना थी।"])
+        result = gen.generate("q", "hi", "प्रमाण।")
         self.assertEqual(result["latency_ms"], result["llm_ms"])
 
     def test_thinking_budget_reported(self):
-        gen, _ = _make_generator(["answer"])
-        result = gen.generate("q", "hi", "evidence")
+        gen, _ = _make_generator(["मैनहट्टन परियोजना थी।"])
+        result = gen.generate("q", "hi", "प्रमाण।")
         self.assertEqual(result["thinking_budget"], 0)
 
 

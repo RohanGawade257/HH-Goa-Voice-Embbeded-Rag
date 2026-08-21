@@ -1,3 +1,4 @@
+import logging
 import time
 from typing import Any
 
@@ -13,6 +14,9 @@ from app.config import (
     MAX_NEW_TOKENS,
     QWEN_MODEL,
 )
+from app.generation.harness import RetryConfig, validate_output, with_retry
+
+_logger = logging.getLogger(__name__)
 
 
 SUCCESS = "SUCCESS"
@@ -123,61 +127,20 @@ class QwenAnswerGenerator:
             },
         ]
 
-    def generate(
+    def _call_once(
         self,
         query: str,
         language: str,
         context: str,
-        max_tokens: int | None = None,
+        max_tokens: int | None,
     ) -> dict[str, Any]:
-        """Generate an answer.
+        """Single raw Qwen API attempt.  Called by generate() via with_retry().
 
-        Args:
-            query: The user query.
-            language: BCP-47 language code (e.g. ``"hi"``).
-            context: Retrieved and compressed context passages.
-            max_tokens: Override ``MAX_NEW_TOKENS`` for this call only.
-                        Used by the token-limit benchmark experiment.
+        Returns the same dict shapes as generate() — SUCCESS, EXCEPTION,
+        TIMEOUT, or HTTP_ERROR.  Never calls with_retry itself.
         """
         start = time.perf_counter()
         effective_max_tokens = max_tokens if max_tokens is not None else MAX_NEW_TOKENS
-
-        if self.backend not in {"qwen", "qwen_api"}:
-            return {
-                "status": EXCEPTION,
-                "answer": "",
-                "grounded": False,
-                "blocked": True,
-                "reason": "qwen_disabled",
-                "exception_type": "QwenDisabled",
-                "latency_ms": (time.perf_counter() - start) * 1000,
-            }
-
-        if not context.strip():
-            return {
-                "status": EXCEPTION,
-                "answer": missing_context_answer(language),
-                "grounded": False,
-                "blocked": True,
-                "reason": "missing_context",
-                "exception_type": "MissingContext",
-                "latency_ms": (time.perf_counter() - start) * 1000,
-                "prompt_chars": 0,
-                "context_chars": 0,
-            }
-
-        if not self.available:
-            return {
-                "status": EXCEPTION,
-                "answer": "",
-                "grounded": False,
-                "blocked": True,
-                "reason": "qwen_api_key_missing",
-                "exception_type": "MissingApiKey",
-                "error": self.load_error,
-                "latency_ms": (time.perf_counter() - start) * 1000,
-            }
-
         messages = self.messages(query, language, context)
         payload: dict[str, Any] = {
             "model": self.model_name,
@@ -188,10 +151,7 @@ class QwenAnswerGenerator:
         }
 
         try:
-            response = self.client.post(
-                self.url,
-                json=payload,
-            )
+            response = self.client.post(self.url, json=payload)
             response.raise_for_status()
             data = response.json()
             answer = (
@@ -210,7 +170,7 @@ class QwenAnswerGenerator:
                     "reason": "empty_llm_answer",
                     "exception_type": "EmptyAnswer",
                     "latency_ms": (time.perf_counter() - start) * 1000,
-                    "prompt_chars": sum(len(message["content"]) for message in messages),
+                    "prompt_chars": sum(len(m["content"]) for m in messages),
                     "context_chars": len(context),
                 }
 
@@ -224,7 +184,7 @@ class QwenAnswerGenerator:
                 "provider": self.provider,
                 "model": self.model_name,
                 "latency_ms": (time.perf_counter() - start) * 1000,
-                "prompt_chars": sum(len(message["content"]) for message in messages),
+                "prompt_chars": sum(len(m["content"]) for m in messages),
                 "context_chars": len(context),
             }
         except httpx.HTTPStatusError as exc:
@@ -239,7 +199,7 @@ class QwenAnswerGenerator:
                 "http_status": response.status_code if response is not None else None,
                 "error": response_text,
                 "latency_ms": (time.perf_counter() - start) * 1000,
-                "prompt_chars": sum(len(message["content"]) for message in messages),
+                "prompt_chars": sum(len(m["content"]) for m in messages),
                 "context_chars": len(context),
             }
         except httpx.TimeoutException as exc:
@@ -252,7 +212,7 @@ class QwenAnswerGenerator:
                 "timeout_seconds": LLM_TIMEOUT_SECONDS,
                 "error": f"{type(exc).__name__}: {exc}",
                 "latency_ms": (time.perf_counter() - start) * 1000,
-                "prompt_chars": sum(len(message["content"]) for message in messages),
+                "prompt_chars": sum(len(m["content"]) for m in messages),
                 "context_chars": len(context),
             }
         except Exception as exc:
@@ -265,6 +225,96 @@ class QwenAnswerGenerator:
                 "exception_type": type(exc).__name__,
                 "error": f"{type(exc).__name__}: {exc}",
                 "latency_ms": (time.perf_counter() - start) * 1000,
-                "prompt_chars": sum(len(message["content"]) for message in messages),
+                "prompt_chars": sum(len(m["content"]) for m in messages),
                 "context_chars": len(context),
             }
+
+    def generate(
+        self,
+        query: str,
+        language: str,
+        context: str,
+        max_tokens: int | None = None,
+    ) -> dict[str, Any]:
+        """Generate an answer with harness: retry + output validation.
+
+        Args:
+            query: The user query.
+            language: BCP-47 language code (e.g. ``"hi"``).
+            context: Retrieved and compressed context passages.
+            max_tokens: Override ``MAX_NEW_TOKENS`` for this call only.
+                        Used by the token-limit benchmark experiment.
+
+        The harness wraps _call_once():
+          - Retries up to 2 times on TIMEOUT or HTTP 429 (200 ms, 400 ms backoff)
+          - On success, validates answer length and script plausibility
+          - Returns attempt_count and retry_delays_ms in the result dict
+        """
+        start = time.perf_counter()
+
+        # ── Pre-call guards (fast-path returns, no retry needed) ─────────────
+        if self.backend not in {"qwen", "qwen_api"}:
+            return {
+                "status": EXCEPTION,
+                "answer": "",
+                "grounded": False,
+                "blocked": True,
+                "reason": "qwen_disabled",
+                "exception_type": "QwenDisabled",
+                "latency_ms": (time.perf_counter() - start) * 1000,
+                "attempt_count": 0,
+                "retry_delays_ms": [],
+            }
+
+        if not context.strip():
+            return {
+                "status": EXCEPTION,
+                "answer": missing_context_answer(language),
+                "grounded": False,
+                "blocked": True,
+                "reason": "missing_context",
+                "exception_type": "MissingContext",
+                "latency_ms": (time.perf_counter() - start) * 1000,
+                "prompt_chars": 0,
+                "context_chars": 0,
+                "attempt_count": 0,
+                "retry_delays_ms": [],
+            }
+
+        if not self.available:
+            return {
+                "status": EXCEPTION,
+                "answer": "",
+                "grounded": False,
+                "blocked": True,
+                "reason": "qwen_api_key_missing",
+                "exception_type": "MissingApiKey",
+                "error": self.load_error,
+                "latency_ms": (time.perf_counter() - start) * 1000,
+                "attempt_count": 0,
+                "retry_delays_ms": [],
+            }
+
+        # ── Harness: retry wrapper around the raw API call ───────────────────
+        fn = lambda: self._call_once(query, language, context, max_tokens)
+        result = with_retry(fn, RetryConfig(), _logger)
+
+        # ── Output validation (only on success) ──────────────────────────────
+        if result.get("status") == SUCCESS:
+            is_valid, val_reason = validate_output(result["answer"], language)
+            if not is_valid:
+                return {
+                    "status": EXCEPTION,
+                    "answer": "",
+                    "grounded": False,
+                    "blocked": True,
+                    "reason": "invalid_output",
+                    "error": val_reason,
+                    "provider": self.provider,
+                    "model": self.model_name,
+                    "latency_ms": result.get("latency_ms", 0.0),
+                    "attempt_count": result.get("attempt_count", 1),
+                    "retry_delays_ms": result.get("retry_delays_ms", []),
+                }
+
+        return result

@@ -62,6 +62,9 @@ class LLMGenerationTests(unittest.TestCase):
         self.assertIn("supplied evidence", system_prompt)
         self.assertIn("Evidence:", user_prompt)
         self.assertIn("Question:", user_prompt)
+        # Harness: first-try success must report attempt_count=1
+        self.assertEqual(result.get("attempt_count"), 1)
+        self.assertEqual(result.get("retry_delays_ms"), [])
 
     def test_missing_context_returns_language_specific_answer_without_api_call(self):
         called = False
