@@ -32,6 +32,16 @@ function getErrorMessage(code: string | undefined | null): string {
       return "No relevant context was found to generate an AI answer.";
     case "empty_response":
       return "AI model returned an empty response.";
+    case "gemini_api_key_missing":
+      return "Gemini API key is not configured on the server.";
+    case "gemini_http_error":
+      return "Gemini API error — quota exceeded or request rejected. The direct answer above is still valid.";
+    case "gemini_timeout":
+      return "Gemini API timed out. The direct answer above is still valid.";
+    case "gemini_exception":
+      return "Gemini encountered an unexpected error. The direct answer above is still valid.";
+    case "invalid_output":
+      return "AI answer failed validation (wrong language or length). The direct answer above is still valid.";
     default:
       return code;
   }
