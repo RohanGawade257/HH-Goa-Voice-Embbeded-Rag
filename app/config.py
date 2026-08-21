@@ -79,6 +79,8 @@ HF_HUB_OFFLINE = get_bool("HF_HUB_OFFLINE", True)
 
 # ── Gemini backend ──────────────────────────────────────────────────────────
 # Active model: gemini-2.5-flash-lite
+# The stable alias "gemini-2.5-flash-lite" was deprecated for new API keys;
+# the versioned preview tag is required and works for all keys.
 # Non-thinking enforced via thinking_budget=0 in generation_config.
 # Get a key at: https://aistudio.google.com/app/apikey
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
