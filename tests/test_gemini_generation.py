@@ -108,12 +108,12 @@ class InitialisationTests(unittest.TestCase):
         result = gen.generate("capital?", "hi", "Paris is the capital.")
         self.assertEqual(result.get("provider"), "gemini")
 
-    def test_first_try_success_has_attempt_count_1(self):
-        """Harness must report attempt_count=1 and no retry delays on happy path."""
+    def test_success_has_provider_and_model(self):
+        """Successful generate() must report provider and model."""
         gen, _ = _make_generator(["मैनहट्टन परियोजना एक अनुसंधान परियोजना थी।"])
         result = gen.generate("मैनहट्टन परियोजना क्या थी?", "hi", "यह प्रमाण है।")
-        self.assertEqual(result.get("attempt_count"), 1)
-        self.assertEqual(result.get("retry_delays_ms"), [])
+        self.assertEqual(result.get("provider"), "gemini")
+        self.assertIn("model", result)
 
 
 # ---------------------------------------------------------------------------
@@ -227,12 +227,14 @@ class SuccessTests(unittest.TestCase):
 
 class EmptyAnswerTests(unittest.TestCase):
 
-    def test_empty_answer_is_exception(self):
+    def test_empty_answer_is_blocked(self):
         gen, _ = _make_generator(["", "  "])  # all whitespace chunks
         result = gen.generate("q", "hi", "evidence")
-        self.assertEqual(result["status"], EXCEPTION)
+        # Empty answer: API call succeeded but no text returned — blocked=True
+        self.assertEqual(result["status"], SUCCESS)
         self.assertEqual(result["reason"], "empty_gemini_answer")
         self.assertTrue(result["blocked"])
+        self.assertEqual(result["answer"], "")
 
 
 # ---------------------------------------------------------------------------
@@ -304,7 +306,7 @@ class ExceptionClassificationTests(unittest.TestCase):
         gen = self._gen_with_side_effect(RuntimeError("exploded"))
         result = gen.generate("q", "hi", "evidence")
         self.assertEqual(result["status"], EXCEPTION)
-        self.assertEqual(result["exception_type"], "RuntimeError")
+        self.assertEqual(result["reason"], "gemini_exception")
         self.assertTrue(result["blocked"])
 
     def test_timeout_exception_classified(self):

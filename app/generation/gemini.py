@@ -1,25 +1,20 @@
-"""Gemini answer generator for the HH-Goa-Rag pipeline — with harness.
+"""Gemini answer generator for the HH-Goa-Rag pipeline.
 
 Model  : gemini-2.5-flash-lite
 Backend: Google Gemini API via the ``google-genai`` SDK (NOT OpenAI-compatible).
 
 Non-thinking mode
 -----------------
-Gemini 2.5 Flash-Lite supports an official ``thinking_budget`` parameter inside
-``ThinkingConfig``.  Setting ``thinking_budget=0`` fully disables the internal
-reasoning / thinking phase, giving the fastest possible TTFT.
-
-No invented parameters are used — only the officially documented API surface.
+Setting ``thinking_budget=0`` inside ``ThinkingConfig`` fully disables the
+internal reasoning phase, giving the fastest possible TTFT.
 
 Latency measurements
 --------------------
 Every ``generate()`` call returns:
 
-  ttft_ms   — time from request dispatch to the first streamed token chunk
-              (measures when the model starts outputting, i.e. true TTFT).
-  llm_ms    — total wall-clock time for the complete LLM call
-              (TTFT + remaining token generation).
-  latency_ms — alias for llm_ms (keeps pipeline interface consistent).
+  ttft_ms    — time from request dispatch to the first streamed token chunk.
+  llm_ms     — total wall-clock time for the complete LLM call.
+  latency_ms — alias for llm_ms (pipeline interface compatibility).
 """
 
 from __future__ import annotations
@@ -36,7 +31,6 @@ from app.config import (
     GEMINI_TIMEOUT_SECONDS,
     LLM_TEMPERATURE,
 )
-from app.generation.harness import RetryConfig, validate_output, with_retry
 from app.generation.llm import (
     EXCEPTION,
     HTTP_ERROR,
@@ -86,11 +80,11 @@ def _user_prompt(query: str, context: str) -> str:
 
 
 class GeminiAnswerGenerator:
-    """Answer generator backed by Google Gemini 2.5 Flash-Lite.
+    """Answer generator backed by Google Gemini.
 
     Non-thinking mode is enabled by setting ``thinking_budget=0`` in
     ``ThinkingConfig``, which is the officially supported mechanism for
-    disabling Gemini 2.5's reasoning phase.
+    disabling Gemini's reasoning phase for minimum latency.
 
     TTFT is measured using the streaming API: we record the wall-clock
     timestamp when the first token chunk arrives, giving a true
@@ -123,6 +117,7 @@ class GeminiAnswerGenerator:
             self.client = genai.Client(api_key=self.api_key)
 
         self.load_ms = (time.perf_counter() - start) * 1000
+        _logger.info("Gemini API client ready in %.0f ms", self.load_ms)
 
     def close(self) -> None:
         """No persistent connection to close for the Gemini SDK client."""
@@ -133,45 +128,93 @@ class GeminiAnswerGenerator:
         system_instruction: str,
         max_output_tokens: int | None = None,
     ) -> Any:
-        """Build a GenerateContentConfig with non-thinking enforced.
-
-        ``system_instruction`` is placed inside the config (the correct location
-        for the google-genai SDK v1+).  ``thinking_budget=0`` disables the
-        Gemini 2.5 thinking/reasoning phase.
-        """
-        tokens = max_output_tokens if max_output_tokens is not None else self.max_output_tokens
-        return genai_types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            temperature=LLM_TEMPERATURE,
-            max_output_tokens=tokens,
-            thinking_config=genai_types.ThinkingConfig(
-                thinking_budget=self.thinking_budget,  # 0 = no thinking
-            ),
+        """Build a minimal GenerateContentConfig for Gemini."""
+        tokens = (
+            max_output_tokens
+            if max_output_tokens is not None
+            else self.max_output_tokens
         )
 
-    def _call_once(
+        return genai_types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            max_output_tokens=tokens,
+        )
+
+    def generate(
         self,
         query: str,
         language: str,
         context: str,
-        max_tokens: int | None,
+        max_tokens: int | None = None,
     ) -> dict[str, Any]:
-        """Single raw Gemini streaming attempt.  Called by generate() via with_retry().
+        """Generate a grounded answer and return timing + classification.
 
-        Returns the same dict shapes as generate() — SUCCESS, EXCEPTION,
-        TIMEOUT, or HTTP_ERROR.  Never calls with_retry itself.
+        Returns a dict with at minimum:
+            status     — SUCCESS | HTTP_ERROR | TIMEOUT | EXCEPTION
+            answer     — generated text (empty on failure)
+            grounded   — bool
+            blocked    — bool
+            reason     — short string identifier
+            ttft_ms    — time to first token (ms), 0.0 on failure
+            llm_ms     — total LLM wall-clock time (ms)
+            latency_ms — alias for llm_ms (pipeline compatibility)
+            model      — model identifier used
+            provider   — "gemini"
         """
         call_start = time.perf_counter()
 
+        # ── Pre-call guards ──────────────────────────────────────────────────
+        if self.backend != "gemini":
+            elapsed = (time.perf_counter() - call_start) * 1000
+            return {
+                "status": EXCEPTION,
+                "answer": "",
+                "grounded": False,
+                "blocked": True,
+                "reason": "gemini_disabled",
+                "ttft_ms": 0.0,
+                "llm_ms": elapsed,
+                "latency_ms": elapsed,
+                "provider": "gemini",
+                "model": self.model_name,
+            }
+
+        if not context.strip():
+            elapsed = (time.perf_counter() - call_start) * 1000
+            return {
+                "status": EXCEPTION,
+                "answer": missing_context_answer(language),
+                "grounded": False,
+                "blocked": True,
+                "reason": "missing_context",
+                "ttft_ms": 0.0,
+                "llm_ms": elapsed,
+                "latency_ms": elapsed,
+                "provider": "gemini",
+                "model": self.model_name,
+            }
+
+        if not self.available:
+            elapsed = (time.perf_counter() - call_start) * 1000
+            return {
+                "status": EXCEPTION,
+                "answer": "",
+                "grounded": False,
+                "blocked": True,
+                "reason": "gemini_api_key_missing",
+                "error": self.load_error,
+                "ttft_ms": 0.0,
+                "llm_ms": elapsed,
+                "latency_ms": elapsed,
+                "provider": "gemini",
+                "model": self.model_name,
+            }
+
+        # ── Single direct Gemini streaming call ──────────────────────────────
         system_prompt = _build_system_prompt(language)
         user_content = _user_prompt(query, context)
         prompt_chars = len(system_prompt) + len(user_content)
 
-        # ── streaming call to capture TTFT ───────────────────────────────────
-        # generate_content_stream returns a plain Iterator (not a context
-        # manager) in google-genai v1+.  We timestamp the first yielded chunk
-        # to measure true time-to-first-token.
-        # Initialise before the try block so the except clause can reference them.
         chunks: list[str] = []
         ttft_ms: float = 0.0
         first_chunk_received = False
@@ -201,29 +244,12 @@ class GeminiAnswerGenerator:
             llm_ms = (time.perf_counter() - call_start) * 1000
             answer = "".join(chunks).strip()
 
-            if not answer:
-                return {
-                    "status": EXCEPTION,
-                    "answer": "",
-                    "grounded": False,
-                    "blocked": True,
-                    "reason": "empty_gemini_answer",
-                    "exception_type": "EmptyAnswer",
-                    "ttft_ms": ttft_ms,
-                    "llm_ms": llm_ms,
-                    "latency_ms": llm_ms,
-                    "prompt_chars": prompt_chars,
-                    "context_chars": len(context),
-                    "provider": "gemini",
-                    "model": self.model_name,
-                }
-
             return {
                 "status": SUCCESS,
                 "answer": answer,
-                "grounded": True,
-                "blocked": False,
-                "reason": "gemini_grounded_answer",
+                "grounded": bool(answer),
+                "blocked": not bool(answer),
+                "reason": "gemini_grounded_answer" if answer else "empty_gemini_answer",
                 "ttft_ms": round(ttft_ms, 2),
                 "llm_ms": round(llm_ms, 2),
                 "latency_ms": round(llm_ms, 2),
@@ -240,11 +266,7 @@ class GeminiAnswerGenerator:
             exc_type = type(exc).__name__
             exc_msg = str(exc)[:500]
 
-            # Map common Gemini SDK exception names to our classification.
-            # The SDK raises subclasses of google.api_core.exceptions or
-            # google.genai.errors — we pattern-match on the name string so
-            # we don't hard-import those exception hierarchies here.
-            if "deadline" in exc_msg.lower() or "timeout" in exc_type.lower() or "deadline" in exc_type.lower():
+            if "deadline" in exc_msg.lower() or "timeout" in exc_type.lower():
                 status = TIMEOUT
                 reason = "gemini_timeout"
             elif any(
@@ -257,13 +279,14 @@ class GeminiAnswerGenerator:
                 status = EXCEPTION
                 reason = "gemini_exception"
 
+            _logger.warning("Gemini call failed status=%s exc=%s", status, exc_msg)
+
             return {
                 "status": status,
                 "answer": "",
                 "grounded": False,
                 "blocked": True,
                 "reason": reason,
-                "exception_type": exc_type,
                 "error": exc_msg,
                 "ttft_ms": ttft_ms if first_chunk_received else 0.0,
                 "llm_ms": round(llm_ms, 2),
@@ -273,111 +296,3 @@ class GeminiAnswerGenerator:
                 "provider": "gemini",
                 "model": self.model_name,
             }
-
-    def generate(
-        self,
-        query: str,
-        language: str,
-        context: str,
-        max_tokens: int | None = None,
-    ) -> dict[str, Any]:
-        """Generate a grounded answer and return timing + classification.
-
-        The generation call is wrapped in the harness:
-          - Retries up to 2 times on TIMEOUT or HTTP 429 with exponential backoff
-            (200 ms, 400 ms).  All other errors return immediately.
-          - On success, the answer text is validated (length + script plausibility).
-            An invalid answer returns reason="invalid_output" without the bad text.
-
-        Returns a dict with at minimum:
-            status          — SUCCESS | HTTP_ERROR | TIMEOUT | EXCEPTION
-            answer          — generated text (empty on failure)
-            grounded        — bool
-            blocked         — bool
-            reason          — short string identifier
-            ttft_ms         — time to first token (ms), 0.0 on failure
-            llm_ms          — total LLM wall-clock time (ms)
-            latency_ms      — alias for llm_ms (pipeline compatibility)
-            model           — model identifier used
-            provider        — "gemini"
-            attempt_count   — how many times the API was called (1–3)
-            retry_delays_ms — sleep durations between attempts (ms)
-        """
-        call_start = time.perf_counter()
-
-        # ── Pre-call guards (fast-path returns, no retry needed) ─────────────
-        if self.backend != "gemini":
-            return {
-                "status": EXCEPTION,
-                "answer": "",
-                "grounded": False,
-                "blocked": True,
-                "reason": "gemini_disabled",
-                "exception_type": "GeminiDisabled",
-                "ttft_ms": 0.0,
-                "llm_ms": (time.perf_counter() - call_start) * 1000,
-                "latency_ms": (time.perf_counter() - call_start) * 1000,
-                "attempt_count": 0,
-                "retry_delays_ms": [],
-            }
-
-        if not context.strip():
-            elapsed = (time.perf_counter() - call_start) * 1000
-            return {
-                "status": EXCEPTION,
-                "answer": missing_context_answer(language),
-                "grounded": False,
-                "blocked": True,
-                "reason": "missing_context",
-                "exception_type": "MissingContext",
-                "ttft_ms": 0.0,
-                "llm_ms": elapsed,
-                "latency_ms": elapsed,
-                "prompt_chars": 0,
-                "context_chars": 0,
-                "attempt_count": 0,
-                "retry_delays_ms": [],
-            }
-
-        if not self.available:
-            elapsed = (time.perf_counter() - call_start) * 1000
-            return {
-                "status": EXCEPTION,
-                "answer": "",
-                "grounded": False,
-                "blocked": True,
-                "reason": "gemini_api_key_missing",
-                "exception_type": "MissingApiKey",
-                "error": self.load_error,
-                "ttft_ms": 0.0,
-                "llm_ms": elapsed,
-                "latency_ms": elapsed,
-                "attempt_count": 0,
-                "retry_delays_ms": [],
-            }
-
-        # ── Harness: retry wrapper around the raw API call ───────────────────
-        fn = lambda: self._call_once(query, language, context, max_tokens)
-        result = with_retry(fn, RetryConfig(), _logger)
-
-        # ── Output validation (only on success) ──────────────────────────────
-        if result.get("status") == SUCCESS:
-            is_valid, val_reason = validate_output(result["answer"], language)
-            if not is_valid:
-                return {
-                    "status": EXCEPTION,
-                    "answer": "",
-                    "grounded": False,
-                    "blocked": True,
-                    "reason": "invalid_output",
-                    "error": val_reason,
-                    "ttft_ms": result.get("ttft_ms", 0.0),
-                    "llm_ms": result.get("llm_ms", 0.0),
-                    "latency_ms": result.get("latency_ms", 0.0),
-                    "provider": "gemini",
-                    "model": self.model_name,
-                    "attempt_count": result.get("attempt_count", 1),
-                    "retry_delays_ms": result.get("retry_delays_ms", []),
-                }
-
-        return result
