@@ -5,6 +5,7 @@ from pathlib import Path
 sys.stdout.reconfigure(encoding="utf-8")
 os.environ["ANSWER_BACKEND"] = "extractive"
 os.environ["SARVAM_API_KEY"] = ""
+os.environ["SARVAM_STT_MOCK"] = "1"
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:

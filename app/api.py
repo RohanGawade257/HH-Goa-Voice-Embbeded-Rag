@@ -21,7 +21,7 @@ import time
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Request
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -44,7 +44,7 @@ from app.config import (
     TOP_CONTEXT_CHUNKS,
     TOP_K_FINAL,
 )
-from app.voice.stt import transcribe_audio, stt_status
+from app.voice.stt import STTConfigurationError, STTError, transcribe_audio, stt_status
 
 
 # ============================================================
@@ -524,7 +524,7 @@ async def voice(
             "then passed to the RAG pipeline."
         ),
     ),
-    language: str = "hi-IN",
+    language: str = Form("hi-IN"),
 ):
     """
     Process a voice query through STT → RAG pipeline.
@@ -590,10 +590,15 @@ async def voice(
             audio_bytes=audio_bytes,
             language_code=language,
         )
-    except RuntimeError as stt_exc:
+    except STTConfigurationError as stt_exc:
+        raise HTTPException(
+            status_code=503,
+            detail=stt_exc.to_safe_dict(),
+        )
+    except STTError as stt_exc:
         raise HTTPException(
             status_code=502,
-            detail=f"STT provider error: {stt_exc}",
+            detail=stt_exc.to_safe_dict(),
         )
 
     transcript = stt_result.get("transcript", "").strip()

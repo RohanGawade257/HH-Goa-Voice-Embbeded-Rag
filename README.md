@@ -48,7 +48,7 @@ Next.js frontend    [frontend/ — React + Tailwind v4 + Motion]
 # Install dependencies
 pip install -r requirements.txt
 
-# Copy env and set your Sarvam API key (optional — STT falls back to mock mode without it)
+# Copy env and set your Sarvam API key
 cp .env.example .env
 # Edit .env and set SARVAM_API_KEY if you have one
 
@@ -81,7 +81,8 @@ Open **http://localhost:3000** in your browser.
 
 | File | Variable | Description |
 |---|---|---|
-| `.env` | `SARVAM_API_KEY` | Sarvam STT key (optional — mock mode if absent) |
+| `.env` | `SARVAM_API_KEY` | Sarvam STT key for real voice input |
+| `.env` | `SARVAM_STT_MOCK` | Set to `1` only for offline/dev mock STT tests |
 | `frontend/.env.local` | `NEXT_PUBLIC_API_URL` | FastAPI base URL (default: `http://localhost:8000`) |
 
 ---
@@ -167,7 +168,7 @@ HH-Goa-Rag/
 │   │   ├── retrieve.py         Standalone retrieval benchmark utility
 │   │   └── query_embedding.py  Query embedding utility (sentence-transformers)
 │   ├── voice/
-│   │   └── stt.py              Sarvam STT integration + mock fallback
+│   │   └── stt.py              Sarvam STT integration + explicit dev mock mode
 │   └── generation/             (placeholder for future LLM integration)
 │
 ├── ingestion/                  One-time data preparation scripts
@@ -239,7 +240,7 @@ python -m ingestion.embed_data      # re-build vector index
 
 1. **Extractive answers only** — no generative LLM. Answer quality is bounded by passage quality.
 2. **Local Qdrant SQLite** — fine for Stage 1 latency targets. Production should use Qdrant Cloud.
-3. **STT requires Sarvam credentials** — set `SARVAM_API_KEY` in `.env`. Without it, voice mode uses mock transcription.
+3. **STT requires Sarvam credentials** — set `SARVAM_API_KEY` in `.env`. Use `SARVAM_STT_MOCK=1` only for offline/dev mock transcription.
 4. **Recall@1 = 68.4%** — ~32% of queries don't surface the correct passage as rank-1. Typical for a 1K-record dataset.
 
 ---

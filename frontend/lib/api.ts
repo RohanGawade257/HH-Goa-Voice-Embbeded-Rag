@@ -11,8 +11,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 //
 // These are INDEPENDENT capabilities. Do NOT conflate them.
 //
+// Sarvam STT supports these voice languages independently of RAG coverage.
 // Telugu: STT-supported but NOT in the RAG corpus.
-// Nepali/Sanskrit/Urdu: in RAG corpus but NOT STT-supported by Sarvam.
 // English: STT-supported (voice input), but no RAG passages indexed.
 
 export interface Language {
@@ -33,10 +33,10 @@ export const LANGUAGES: Language[] = [
   { code: "or-IN", name: "Odia",       nativeName: "ଓଡ଼ିଆ",      ragSupported: true,  sttSupported: true  },
   { code: "pa-IN", name: "Punjabi",    nativeName: "ਪੰਜਾਬੀ",     ragSupported: true,  sttSupported: true  },
   { code: "ta-IN", name: "Tamil",      nativeName: "தமிழ்",      ragSupported: true,  sttSupported: true  },
-  { code: "as-IN", name: "Assamese",   nativeName: "অসমীয়া",    ragSupported: true,  sttSupported: false },
-  { code: "ne-IN", name: "Nepali",     nativeName: "नेपाली",     ragSupported: true,  sttSupported: false },
-  { code: "sa-IN", name: "Sanskrit",   nativeName: "संस्कृतम्",  ragSupported: true,  sttSupported: false },
-  { code: "ur-IN", name: "Urdu",       nativeName: "اردو",       ragSupported: true,  sttSupported: false },
+  { code: "as-IN", name: "Assamese",   nativeName: "অসমীয়া",    ragSupported: true,  sttSupported: true  },
+  { code: "ne-IN", name: "Nepali",     nativeName: "नेपाली",     ragSupported: true,  sttSupported: true  },
+  { code: "sa-IN", name: "Sanskrit",   nativeName: "संस्कृतम्",  ragSupported: true,  sttSupported: true  },
+  { code: "ur-IN", name: "Urdu",       nativeName: "اردو",       ragSupported: true,  sttSupported: true  },
   // Telugu: STT-supported but not in RAG corpus — available for voice transcription only
   { code: "te-IN", name: "Telugu",     nativeName: "తెలుగు",     ragSupported: false, sttSupported: true  },
   // English: voice input works, but no RAG passages indexed

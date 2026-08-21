@@ -86,3 +86,19 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
 GEMINI_MAX_OUTPUT_TOKENS = get_int("GEMINI_MAX_OUTPUT_TOKENS", 30)
 GEMINI_THINKING_BUDGET = get_int("GEMINI_THINKING_BUDGET", 0)
 GEMINI_TIMEOUT_SECONDS = get_float("GEMINI_TIMEOUT_SECONDS", 10.0)
+
+# Sarvam Speech-to-Text configuration. Importing app.config is the single
+# project-level dotenv load point, so STT imports this module before reading env.
+SARVAM_API_KEY_ENV = "SARVAM_API_KEY"
+SARVAM_STT_URL = os.getenv(
+    "SARVAM_STT_URL",
+    "https://api.sarvam.ai/speech-to-text",
+).strip()
+SARVAM_STT_MODEL = os.getenv("SARVAM_STT_MODEL", "saaras:v3").strip()
+SARVAM_STT_MODE = os.getenv("SARVAM_STT_MODE", "transcribe").strip()
+SARVAM_STT_TIMEOUT_SECONDS = get_float("SARVAM_STT_TIMEOUT_SECONDS", 30.0)
+SARVAM_STT_MOCK = get_bool("SARVAM_STT_MOCK", False)
+
+
+def get_sarvam_api_key() -> str:
+    return os.getenv(SARVAM_API_KEY_ENV, "").strip()
