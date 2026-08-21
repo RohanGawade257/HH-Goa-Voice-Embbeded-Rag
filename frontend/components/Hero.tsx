@@ -140,7 +140,7 @@ export default function Hero({ onQueryClick, onExampleSelect }: HeroProps) {
               </span>{" "}
               and a{" "}
               <span style={{ color: "var(--accent-light)" }}>
-                Gemini 2.5 Flash Lite AI answer
+                Gemini 3.5 Flash Lite AI answer
               </span>{" "}
               streaming shortly after.
             </motion.p>

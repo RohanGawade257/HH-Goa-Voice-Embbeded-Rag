@@ -175,7 +175,7 @@ export default function BenchmarkSection() {
             <span className="font-semibold" style={{ color: "var(--accent)" }}>
               1.8× headroom at P100.
             </span>{" "}
-            Gemini 2.5 Flash Lite AI answer streams in asynchronously after the direct answer.
+            Gemini 3.5 Flash Lite AI answer streams in asynchronously after the direct answer.
           </p>
         </div>
       </div>

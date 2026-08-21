@@ -12,7 +12,30 @@ import pyarrow.parquet as pq
 
 REPO_ID = "ai4bharat/MSMARCO-XI"
 
-SAMPLE_SIZE = 1000
+# ------------------------------------------------------------
+# EXISTING DATA
+# ------------------------------------------------------------
+# Each language already has 1,000 rows locally.
+# We DO NOT download those rows again.
+# ------------------------------------------------------------
+
+EXISTING_ROWS = 1000
+
+# ------------------------------------------------------------
+# NEW DATA TO ADD
+# ------------------------------------------------------------
+# Download rows:
+#
+# 1000 -> 4999
+#
+# = 4,000 new rows
+# ------------------------------------------------------------
+
+ROWS_TO_ADD = 4000
+
+START_ROW = EXISTING_ROWS
+
+END_ROW = START_ROW + ROWS_TO_ADD
 
 OUTPUT_DIR = "data/multilingual"
 
@@ -24,7 +47,7 @@ HTTP_BLOCK_SIZE = 8 * 1024 * 1024
 # ============================================================
 
 LANGUAGES = {
-   
+
     "bn": ("Bengali", "train/bentrain.parquet"),
     "gu": ("Gujarati", "train/gujtrain.parquet"),
     "hi": ("Hindi", "train/hintrain.parquet"),
@@ -58,9 +81,10 @@ COLUMNS = [
 # ============================================================
 
 def output_path(language_code):
+
     return os.path.join(
         OUTPUT_DIR,
-        f"{language_code}_sample_{SAMPLE_SIZE}.jsonl"
+        f"{language_code}_extra_{ROWS_TO_ADD}.jsonl"
     )
 
 
@@ -69,6 +93,7 @@ def output_path(language_code):
 # ============================================================
 
 def make_url(filename):
+
     return (
         f"https://huggingface.co/datasets/"
         f"{REPO_ID}/resolve/main/{filename}"
@@ -76,7 +101,7 @@ def make_url(filename):
 
 
 # ============================================================
-# SAMPLE
+# SAMPLE ADDITIONAL ROWS
 # ============================================================
 
 def sample_language(
@@ -94,14 +119,30 @@ def sample_language(
 
     print(f"URL: {url}")
     print()
+
     print("Columns:")
-    
+
     for column in COLUMNS:
         print(f"  - {column}")
 
     print()
+
     print(
-        f"Target rows: {SAMPLE_SIZE:,}"
+        f"Existing rows     : {EXISTING_ROWS:,}"
+    )
+
+    print(
+        f"Rows to add        : {ROWS_TO_ADD:,}"
+    )
+
+    print(
+        f"Source rows        : "
+        f"{START_ROW:,} -> {END_ROW - 1:,}"
+    )
+
+    print(
+        f"Final total        : "
+        f"{END_ROW:,}"
     )
 
     print()
@@ -160,9 +201,42 @@ def sample_language(
                 f"{row_groups}"
             )
 
+            # ------------------------------------------------
+            # SAFETY CHECK
+            # ------------------------------------------------
+
+            if total_rows < END_ROW:
+
+                print()
+                print(
+                    "ERROR:"
+                )
+
+                print(
+                    f"Dataset contains only "
+                    f"{total_rows:,} rows."
+                )
+
+                print(
+                    f"Need at least "
+                    f"{END_ROW:,} rows."
+                )
+
+                return 0
+
             print()
             print(
                 "Reading ONLY selected columns..."
+            )
+
+            print(
+                f"Skipping first "
+                f"{START_ROW:,} rows..."
+            )
+
+            print(
+                f"Collecting next "
+                f"{ROWS_TO_ADD:,} rows..."
             )
 
             # ------------------------------------------------
@@ -173,25 +247,95 @@ def sample_language(
 
             rows = []
 
+            rows_seen = 0
+
+            # Use reasonably sized batches.
+            batch_size = 1000
+
             for batch in parquet.iter_batches(
-                batch_size=SAMPLE_SIZE,
+                batch_size=batch_size,
                 columns=COLUMNS,
                 use_threads=True,
             ):
 
                 batch_rows = batch.to_pylist()
 
+                batch_start = rows_seen
+
+                batch_end = (
+                    rows_seen
+                    + len(batch_rows)
+                )
+
+                rows_seen = batch_end
+
+                # ------------------------------------------------
+                # ENTIRE BATCH IS BEFORE START_ROW
+                # ------------------------------------------------
+
+                if batch_end <= START_ROW:
+                    continue
+
+                # ------------------------------------------------
+                # BATCH CROSSES START_ROW
+                # ------------------------------------------------
+
+                if batch_start < START_ROW:
+
+                    skip_inside_batch = (
+                        START_ROW
+                        - batch_start
+                    )
+
+                    batch_rows = batch_rows[
+                        skip_inside_batch:
+                    ]
+
+                # ------------------------------------------------
+                # ADD ROWS
+                # ------------------------------------------------
+
                 rows.extend(batch_rows)
 
-                # Stop immediately after 1000.
-                if len(rows) >= SAMPLE_SIZE:
-                    rows = rows[:SAMPLE_SIZE]
+                # ------------------------------------------------
+                # STOP AFTER EXACTLY 4,000 NEW ROWS
+                # ------------------------------------------------
+
+                if len(rows) >= ROWS_TO_ADD:
+
+                    rows = rows[
+                        :ROWS_TO_ADD
+                    ]
+
                     break
 
             read_time = (
                 time.perf_counter()
                 - read_start
             )
+
+            # ------------------------------------------------
+            # VALIDATION
+            # ------------------------------------------------
+
+            if len(rows) != ROWS_TO_ADD:
+
+                print()
+                print(
+                    "FAILED:"
+                )
+
+                print(
+                    f"Expected "
+                    f"{ROWS_TO_ADD:,} rows."
+                )
+
+                print(
+                    f"Received "
+                    f"{len(rows):,} rows."
+                )
+
+                return 0
 
             # ------------------------------------------------
             # WRITE
@@ -208,7 +352,8 @@ def sample_language(
 
             print()
             print(
-                f"Writing {len(rows):,} rows..."
+                f"Writing "
+                f"{len(rows):,} rows..."
             )
 
             with open(
@@ -228,10 +373,29 @@ def sample_language(
                         + "\n"
                     )
 
+            # ------------------------------------------------
+            # VERIFY OUTPUT
+            # ------------------------------------------------
+
+            written_rows = 0
+
+            with open(
+                output_file,
+                "r",
+                encoding="utf-8",
+            ) as f:
+
+                for _ in f:
+                    written_rows += 1
+
             total_time = (
                 time.perf_counter()
                 - start
             )
+
+            # ------------------------------------------------
+            # SUCCESS
+            # ------------------------------------------------
 
             print()
             print("-" * 70)
@@ -239,32 +403,57 @@ def sample_language(
             print("-" * 70)
 
             print(
-                f"Language       : {language_name}"
+                f"Language       : "
+                f"{language_name}"
             )
 
             print(
-                f"Rows           : {len(rows):,}"
+                f"Existing rows  : "
+                f"{EXISTING_ROWS:,}"
             )
 
             print(
-                f"Read time      : {read_time:.2f}s"
+                f"Rows added     : "
+                f"{written_rows:,}"
             )
 
             print(
-                f"Total time     : {total_time:.2f}s"
+                f"Source range   : "
+                f"{START_ROW:,} - "
+                f"{END_ROW - 1:,}"
             )
 
             print(
-                f"Output         : {output_file}"
+                f"Final total    : "
+                f"{END_ROW:,}"
             )
 
             print(
-                "Full 3+ GB file cached : NO"
+                f"Read time      : "
+                f"{read_time:.2f}s"
+            )
+
+            print(
+                f"Total time     : "
+                f"{total_time:.2f}s"
+            )
+
+            print(
+                f"Output         : "
+                f"{output_file}"
+            )
+
+            print(
+                "Original 1,000 rows modified : NO"
+            )
+
+            print(
+                "Full 3+ GB file cached       : NO"
             )
 
             print("-" * 70)
 
-            return len(rows)
+            return written_rows
 
     except Exception as e:
 
@@ -293,40 +482,77 @@ def sample_language(
 def main():
 
     print("=" * 70)
-    print("HH GOA RAG - MINIMAL REMOTE PARQUET SAMPLER")
+    print(
+        "HH GOA RAG - ADDITIONAL MULTILINGUAL DATA SAMPLER"
+    )
     print("=" * 70)
 
     print()
+
     print(
-        f"Dataset   : {REPO_ID}"
+        f"Dataset       : {REPO_ID}"
     )
 
     print(
-        f"Sample    : {SAMPLE_SIZE:,} rows/language"
+        f"Existing rows : {EXISTING_ROWS:,}/language"
     )
 
     print(
-        f"Languages : {len(LANGUAGES)}"
+        f"Rows to add   : {ROWS_TO_ADD:,}/language"
     )
 
     print(
-        f"Output    : {OUTPUT_DIR}"
+        f"Final target  : {END_ROW:,}/language"
+    )
+
+    print(
+        f"Languages     : {len(LANGUAGES)}"
+    )
+
+    print(
+        f"New rows total: "
+        f"{len(LANGUAGES) * ROWS_TO_ADD:,}"
+    )
+
+    print(
+        f"Final corpus  : "
+        f"{len(LANGUAGES) * END_ROW:,}"
+    )
+
+    print(
+        f"Output        : {OUTPUT_DIR}"
     )
 
     print()
+
+    print("Strategy:")
+
     print(
-        "Strategy:"
+        "EXISTING 1,000"
+        " → KEEP UNTOUCHED"
     )
 
     print(
         "REMOTE PARQUET"
         " → HTTP RANGE"
-        " → SMALL COLUMNS"
-        " → FIRST 1000"
+        " → SKIP FIRST 1,000"
+        " → READ NEXT 4,000"
         " → JSONL"
     )
 
     print()
+
+    print(
+        "Source row ranges:"
+    )
+
+    print(
+        f"  {START_ROW:,} -> "
+        f"{END_ROW - 1:,}"
+    )
+
+    print()
+
     print(
         "Selected columns:"
     )
@@ -399,7 +625,7 @@ def main():
 
         total_rows += count
 
-        if count == SAMPLE_SIZE:
+        if count == ROWS_TO_ADD:
 
             status = "COMPLETE"
             completed += 1
@@ -416,7 +642,7 @@ def main():
             f"{language_code:2} | "
             f"{language_name:12} | "
             f"{status:8} | "
-            f"{count:5} rows"
+            f"{count:5} new rows"
         )
 
     print()
@@ -428,13 +654,23 @@ def main():
     )
 
     print(
-        f"Total rows          : "
+        f"New rows added      : "
         f"{total_rows:,}"
     )
 
     print(
-        f"Expected rows       : "
-        f"{len(LANGUAGES) * SAMPLE_SIZE:,}"
+        f"Expected new rows   : "
+        f"{len(LANGUAGES) * ROWS_TO_ADD:,}"
+    )
+
+    print(
+        f"Final rows/language : "
+        f"{END_ROW:,}"
+    )
+
+    print(
+        f"Final corpus target : "
+        f"{len(LANGUAGES) * END_ROW:,}"
     )
 
     print(
@@ -443,6 +679,7 @@ def main():
     )
 
     print()
+
     print(
         f"Output directory: "
         f"{os.path.abspath(OUTPUT_DIR)}"

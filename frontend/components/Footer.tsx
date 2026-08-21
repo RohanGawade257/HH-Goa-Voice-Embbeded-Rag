@@ -50,7 +50,7 @@ export default function Footer() {
                 "Qdrant vector DB (10,302 chunks)",
                 "Lexical reranker (Top-20 → Top-3)",
                 "Extractive direct answer (~38ms P50)",
-                "Gemini 2.5 Flash Lite (AI answer, streaming)",
+                "Gemini 3.5 Flash Lite (AI answer, streaming)",
                 "Sarvam STT (13 Indian languages)",
               ].map((item) => (
                 <li
@@ -78,7 +78,7 @@ export default function Footer() {
                 ["Grounded",   "99.7%"],
                 ["P50 latency","38ms"],
                 ["P100 latency","110ms"],
-                ["Dataset",    "1,000 queries"],
+                ["Dataset",    "13,000 queries"],
               ].map(([k, v]) => (
                 <li
                   key={k}
@@ -110,14 +110,14 @@ export default function Footer() {
           </p>
           <div className="flex items-center gap-4">
             <a
-              href="http://localhost:8000/docs"
+              href="https://hhgoa.com/"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs transition-opacity opacity-40 hover:opacity-80"
               style={{ color: "#F5F3EE" }}
             >
               <ExternalLink size={12} />
-              API Docs
+              HHG
             </a>
           </div>
         </div>

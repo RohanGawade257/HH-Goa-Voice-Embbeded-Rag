@@ -31,7 +31,7 @@ const STEPS = [
     n: "05",
     title: "Dual-mode answer",
     hindi: "दोहरा उत्तर",
-    desc: "An extractive answer returns in ~38ms P50. Gemini 2.5 Flash Lite then streams an AI-enhanced answer asynchronously.",
+    desc: "An extractive answer returns in ~38ms P50. Gemini 3.5 Flash Lite then streams an AI-enhanced answer asynchronously.",
   },
   {
     n: "06",
