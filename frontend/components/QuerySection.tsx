@@ -159,29 +159,46 @@ export default function QuerySection({ defaultQuery, defaultLanguage }: QuerySec
         try {
           const data = await queryVoice(blob, selectedLang.code);
           const timings = data.rag_timings ?? data.timings;
+          const directAnswer = data.direct_answer ?? {
+            answer: data.answer,
+            grounded: data.grounded,
+            blocked: data.blocked,
+            reason: data.reason,
+            retrieved_chunks: data.retrieved_chunks,
+            time_to_direct_ms: timings?.total_ms ?? 0,
+          };
+          const llmAnswer = data.llm_answer ?? {
+            answer: null,
+            error: "AI answer was not returned by the voice endpoint.",
+            time_to_llm_ms: timings?.total_ms ?? 0,
+          };
+          console.info("VOICE RESPONSE direct_answer received", {
+            requestedLanguage: data.requested_language_code ?? selectedLang.code,
+            sttLanguage: data.language_code,
+            answerLanguage: data.answer_language,
+            retrievedChunks: directAnswer.retrieved_chunks,
+          });
+          console.info("VOICE RESPONSE llm_answer received", {
+            hasAnswer: Boolean(llmAnswer.answer),
+            hasError: Boolean(llmAnswer.error),
+            timeToLlmMs: llmAnswer.time_to_llm_ms,
+          });
           setTranscript(data.transcript);
           setQuery(data.transcript);
           setDualResult({
             query: data.query,
-            directAnswer: {
-              answer: data.answer,
-              grounded: data.grounded,
-              blocked: data.blocked,
-              reason: data.reason,
-              retrieved_chunks: data.retrieved_chunks,
-              time_to_direct_ms: timings?.total_ms ?? 0,
-            },
-            llmAnswer: null,
+            directAnswer,
+            llmAnswer,
             sources: data.sources,
             timing: timings
               ? {
                   embedding_ms: timings.embedding_ms,
                   qdrant_ms: timings.qdrant_ms,
                   rerank_ms: timings.rerank_ms,
-                  compression_ms: 0,
-                  llm_ms: timings.answer_ms ?? 0,
-                  time_to_direct_ms: timings.total_ms,
-                  time_to_llm_ms: timings.total_ms,
+                  compression_ms: timings.compression_ms ?? 0,
+                  llm_ms: timings.llm_ms ?? 0,
+                  time_to_direct_ms: directAnswer.time_to_direct_ms,
+                  time_to_llm_ms: llmAnswer.time_to_llm_ms,
                   total_ms: timings.total_ms,
                 }
               : null,
@@ -252,12 +269,12 @@ export default function QuerySection({ defaultQuery, defaultLanguage }: QuerySec
             className="text-[11px] uppercase tracking-widest font-semibold mb-2"
             style={{ color: "var(--color-ink-muted)" }}
           >
-            Language
+            {mode === "voice" ? "Spoken language" : "Query language"}
           </p>
           <div
             className="flex flex-wrap gap-1.5"
             role="listbox"
-            aria-label="Select query language"
+            aria-label={mode === "voice" ? "Select spoken language" : "Select query language"}
           >
             {RAG_LANGUAGES.map((lang) => {
               const isSelected = selectedLang.code === lang.code;

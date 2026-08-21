@@ -584,7 +584,11 @@ class RAGEngine:
             {"text": s["text"], "score": s.get("score", 0.0)}
             for s in compression_result["snippets"]
         ]
-        direct_result = generate_extractive_answer(state["query"], compressed_results)
+        direct_result = generate_extractive_answer(
+            state["query"],
+            compressed_results,
+            state["language_code"] or "",
+        )
         answer_ms = (time.perf_counter() - answer_start) * 1000
 
         total_ms = (time.perf_counter() - state["_pipeline_start"]) * 1000
@@ -845,6 +849,24 @@ class RAGEngine:
             "latency_ms"
         ]
 
+        language_code = normalize_language_code(
+            language
+        )
+
+        if language_code is None and top3_results:
+
+            language_code = normalize_language_code(
+                top3_results[0].get(
+                    "language"
+                )
+            )
+
+        if language_code is None and top3_results:
+
+            language_code = top3_results[0].get(
+                "language"
+            )
+
         # ====================================================
         # 7. ANSWER GENERATION
         # ====================================================
@@ -852,24 +874,6 @@ class RAGEngine:
         answer_start = time.perf_counter()
 
         if ANSWER_BACKEND in {"gemini", "qwen", "qwen_api"}:
-
-            language_code = normalize_language_code(
-                language
-            )
-
-            if language_code is None and top3_results:
-
-                language_code = normalize_language_code(
-                    top3_results[0].get(
-                        "language"
-                    )
-                )
-
-            if language_code is None and top3_results:
-
-                language_code = top3_results[0].get(
-                    "language"
-                )
 
             answer_result = self.answer_generator.generate(
                 query,
@@ -895,7 +899,8 @@ class RAGEngine:
 
             answer_result = generate_extractive_answer(
                 query,
-                compressed_results
+                compressed_results,
+                language_code or "",
             )
 
         answer_ms = (

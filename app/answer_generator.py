@@ -2,6 +2,8 @@ import time
 import re
 from typing import List, Dict
 
+from app.generation.llm import missing_context_answer
+
 
 # ============================================================
 # HH GOA RAG - STEP 10
@@ -36,6 +38,21 @@ def is_off_topic(query: str) -> bool:
             return True
 
     return False
+
+
+def normalize_answer_language(language: str | None) -> str:
+    if not language:
+        return ""
+    code = str(language).strip().lower()
+    if "-" in code:
+        code = code.split("-", 1)[0]
+    if "_" in code:
+        code = code.split("_", 1)[0]
+    return code
+
+
+def localized_missing_context(language: str | None) -> str:
+    return missing_context_answer(normalize_answer_language(language))
 
 
 def clean_context(results: List[Dict]) -> List[Dict]:
@@ -114,6 +131,7 @@ def keyword_overlap(query: str, context: str) -> float:
 def generate_extractive_answer(
     query: str,
     retrieved_results: List[Dict],
+    language: str | None = None,
 ) -> Dict:
 
     start = time.perf_counter()
@@ -141,10 +159,7 @@ def generate_extractive_answer(
 
     if is_off_topic(query):
         return {
-            "answer": (
-                "I can't answer that question because it "
-                "is outside the available knowledge base."
-            ),
+            "answer": localized_missing_context(language),
             "grounded": False,
             "blocked": True,
             "reason": "off_topic",
@@ -161,10 +176,7 @@ def generate_extractive_answer(
 
     if not context:
         return {
-            "answer": (
-                "I couldn't find enough relevant information "
-                "in the knowledge base to answer this."
-            ),
+            "answer": localized_missing_context(language),
             "grounded": False,
             "blocked": True,
             "reason": "no_context",
@@ -206,10 +218,7 @@ def generate_extractive_answer(
     # Block only when BOTH signals indicate low relevance.
     if overlap < 0.05 and top_score < 0.50:
         return {
-            "answer": (
-                "I couldn't find sufficiently relevant "
-                "information in the knowledge base."
-            ),
+            "answer": localized_missing_context(language),
             "grounded": False,
             "blocked": True,
             "reason": "low_context_relevance",
@@ -279,10 +288,7 @@ def generate_extractive_answer(
 
     if len(answer.strip()) < 10:
         return {
-            "answer": (
-                "I couldn't generate a sufficiently "
-                "grounded answer."
-            ),
+            "answer": localized_missing_context(language),
             "grounded": False,
             "blocked": True,
             "reason": "weak_answer",

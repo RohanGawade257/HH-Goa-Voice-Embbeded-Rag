@@ -52,6 +52,8 @@ export interface Timings {
   embedding_ms: number;
   qdrant_ms: number;
   rerank_ms: number;
+  compression_ms?: number;
+  llm_ms?: number;
   answer_ms: number;
   total_ms: number;
 }
@@ -121,7 +123,12 @@ export interface VoiceResponse extends QueryResponse {
   transcript: string;
   stt_latency_ms: number;
   stt_provider: string;
+  language_code?: string;
+  requested_language_code?: string;
+  answer_language?: string;
   rag_timings: Timings;
+  direct_answer?: DirectAnswerEvent;
+  llm_answer?: LlmAnswerEvent;
 }
 
 export interface HealthResponse {

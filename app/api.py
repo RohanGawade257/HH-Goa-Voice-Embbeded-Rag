@@ -197,6 +197,9 @@ class VoiceResponse(BaseModel):
     transcript: str
     stt_latency_ms: float
     stt_provider: str
+    language_code: Optional[str] = None
+    requested_language_code: Optional[str] = None
+    answer_language: Optional[str] = None
     query: str
     answer: str
     grounded: bool
@@ -205,6 +208,8 @@ class VoiceResponse(BaseModel):
     retrieved_chunks: int
     sources: list[SourceItem]
     rag_timings: TimingsResponse
+    direct_answer: Optional[dict] = None
+    llm_answer: Optional[dict] = None
 
 
 # ============================================================
@@ -231,6 +236,14 @@ def _build_sources(items: list) -> list[dict]:
         }
         for item in items
     ]
+
+
+def _language_for_rag(stt_language_code: str | None, requested_language: str) -> str:
+    """Resolve the answer language from STT output, falling back to request."""
+    language = (stt_language_code or "").strip() or requested_language
+    if language == "od-IN":
+        return "or-IN"
+    return language
 
 
 # ============================================================
@@ -585,6 +598,12 @@ async def voice(
     # STT latency is NOT counted in the <200ms RAG target.
     # --------------------------------------------------------
 
+    logger.info(
+        "VOICE PIPELINE started content_type=%s requested_language=%s",
+        content_type,
+        language,
+    )
+
     try:
         stt_result = transcribe_audio(
             audio_bytes=audio_bytes,
@@ -602,6 +621,17 @@ async def voice(
         )
 
     transcript = stt_result.get("transcript", "").strip()
+    stt_language_code = stt_result.get("language_code") or language
+    answer_language = _language_for_rag(stt_language_code, language)
+
+    logger.info(
+        "VOICE PIPELINE STT complete provider=%s requested_language=%s stt_language=%s latency_ms=%s transcript_chars=%s",
+        stt_result.get("provider", "unknown"),
+        stt_result.get("requested_language_code", language),
+        stt_language_code,
+        stt_result.get("latency_ms", 0.0),
+        len(transcript),
+    )
 
     if not transcript:
         raise HTTPException(
@@ -616,14 +646,98 @@ async def voice(
 
     engine = get_engine()
 
-    rag_result = engine.process(
-        transcript,
-        language=language,
+    rag_start = time.perf_counter()
+    try:
+        direct_result, state = engine.process_dual(
+            transcript,
+            language=answer_language,
+        )
+    except Exception as exc:
+        logger.error("VOICE PIPELINE direct_answer failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"RAG pipeline error: {exc}",
+        ) from exc
+
+    time_to_direct_ms = (time.perf_counter() - rag_start) * 1000
+    logger.info(
+        "VOICE PIPELINE direct_answer generated language=%s retrieved_chunks=%s time_to_direct_ms=%.2f",
+        state.get("language_code") if state else answer_language,
+        direct_result.get("retrieved_chunks", 0),
+        time_to_direct_ms,
+    )
+
+    llm_payload: dict
+    llm_ms = 0.0
+    time_to_llm_ms = time_to_direct_ms
+
+    if state is not None and engine.answer_generator.available:
+        logger.info(
+            "VOICE PIPELINE Gemini generation started language=%s",
+            state.get("language_code") or "",
+        )
+        try:
+            llm_start = time.perf_counter()
+            llm_result = engine.answer_generator.generate(
+                state["query"],
+                state["language_code"] or "",
+                state["compression_result"]["context"],
+            )
+            llm_ms = (time.perf_counter() - llm_start) * 1000
+            time_to_llm_ms = (time.perf_counter() - rag_start) * 1000
+            llm_answer_text = llm_result.get("answer", "")
+            llm_error = None
+            if not llm_answer_text and llm_result.get("reason"):
+                llm_error = llm_result.get("error") or llm_result.get("reason")
+
+            if llm_error:
+                llm_payload = {
+                    "answer": None,
+                    "error": llm_error,
+                    "time_to_llm_ms": round(time_to_llm_ms, 2),
+                }
+            else:
+                llm_payload = {
+                    "answer": llm_answer_text,
+                    "grounded": bool(llm_result.get("grounded", False)),
+                    "blocked": bool(llm_result.get("blocked", False)),
+                    "reason": llm_result.get("reason", ""),
+                    "time_to_llm_ms": round(time_to_llm_ms, 2),
+                }
+            logger.info(
+                "VOICE PIPELINE Gemini generation completed status=%s llm_ms=%.2f",
+                llm_result.get("status", "unknown"),
+                llm_ms,
+            )
+        except Exception as exc:
+            time_to_llm_ms = (time.perf_counter() - rag_start) * 1000
+            llm_payload = {
+                "answer": None,
+                "error": str(exc),
+                "time_to_llm_ms": round(time_to_llm_ms, 2),
+            }
+            logger.warning("VOICE PIPELINE Gemini generation failed: %s", exc)
+    elif state is None:
+        llm_payload = {
+            "answer": None,
+            "error": "empty_query",
+            "time_to_llm_ms": round(time_to_llm_ms, 2),
+        }
+    else:
+        llm_payload = {
+            "answer": None,
+            "error": "llm_unavailable",
+            "time_to_llm_ms": round(time_to_llm_ms, 2),
+        }
+
+    logger.info(
+        "VOICE PIPELINE llm_answer payload ready has_error=%s",
+        bool(llm_payload.get("error")),
     )
 
     # Build sources list
     sources = []
-    for item in rag_result.get("sources", []):
+    for item in direct_result.get("sources", []):
         sources.append(
             SourceItem(
                 rank=item.get("rank", 0),
@@ -637,7 +751,18 @@ async def voice(
             )
         )
 
-    timings = rag_result.get("timings", {})
+    timings = direct_result.get("timings", {})
+    total_ms = max(time_to_llm_ms, float(timings.get("total_ms", 0)))
+    direct_payload = {
+        "answer": direct_result.get("answer", ""),
+        "grounded": bool(direct_result.get("grounded", False)),
+        "blocked": bool(direct_result.get("blocked", False)),
+        "reason": direct_result.get("reason", ""),
+        "retrieved_chunks": int(direct_result.get("retrieved_chunks", 0)),
+        "time_to_direct_ms": round(time_to_direct_ms, 2),
+    }
+
+    logger.info("VOICE PIPELINE response completed")
 
     return VoiceResponse(
         transcript=transcript,
@@ -645,13 +770,16 @@ async def voice(
             stt_result.get("latency_ms", 0.0)
         ),
         stt_provider=stt_result.get("provider", "unknown"),
-        query=rag_result.get("query", transcript),
-        answer=rag_result.get("answer", ""),
-        grounded=bool(rag_result.get("grounded", False)),
-        blocked=bool(rag_result.get("blocked", False)),
-        reason=rag_result.get("reason", ""),
+        language_code=stt_language_code,
+        requested_language_code=stt_result.get("requested_language_code", language),
+        answer_language=state.get("language_code") if state else answer_language,
+        query=direct_result.get("query", transcript),
+        answer=direct_result.get("answer", ""),
+        grounded=bool(direct_result.get("grounded", False)),
+        blocked=bool(direct_result.get("blocked", False)),
+        reason=direct_result.get("reason", ""),
         retrieved_chunks=int(
-            rag_result.get("retrieved_chunks", 0)
+            direct_result.get("retrieved_chunks", 0)
         ),
         sources=sources,
         rag_timings=TimingsResponse(
@@ -668,13 +796,15 @@ async def voice(
                 timings.get("compression_ms", 0)
             ),
             llm_ms=float(
-                timings.get("llm_ms", 0)
+                llm_ms
             ),
             answer_ms=float(
                 timings.get("answer_ms", 0)
             ),
             total_ms=float(
-                timings.get("total_ms", 0)
+                total_ms
             ),
         ),
+        direct_answer=direct_payload,
+        llm_answer=llm_payload,
     )
